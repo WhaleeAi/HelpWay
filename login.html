@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Вход | HelpWay</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+
+<body>
+  <header class="header">
+    <div class="container header__inner">
+      <a class="logo" href="index.html">HelpWay</a>
+      <nav class="nav" aria-label="Основная навигация">
+        <a class="nav__link" href="index.html#about">О нас</a>
+        <a class="nav__link" href="index.html#volunteers">Волонтерам</a>
+        <a class="nav__link" href="index.html#clients">Клиентам</a>
+      </nav>
+      <a class="btn btn--outline" href="index.html">На главную</a>
+    </div>
+  </header>
+
+  <main class="register">
+    <div class="container">
+      <div class="register__card">
+        <h1 class="register__title">Войти</h1>
+        <p class="register__lead">Введите почту и пароль, указанные при регистрации.</p>
+
+        <form id="loginForm" class="form" novalidate>
+          <div class="form__group">
+            <label for="loginEmail">Почта</label>
+            <input id="loginEmail" name="email" type="email" placeholder="you@example.com" required />
+          </div>
+
+          <div class="form__group">
+            <label for="loginPassword">Пароль</label>
+            <input id="loginPassword" name="password" type="password" required />
+          </div>
+
+          <button class="btn btn--primary" type="submit">Войти</button>
+          <p class="form__status" id="loginStatus" aria-live="polite"></p>
+        </form>
+
+        <a class="back-link" href="register.html">&larr; Еще нет аккаунта? Зарегистрироваться</a>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    (() => {
+      const form = document.getElementById("loginForm");
+      const statusEl = document.getElementById("loginStatus");
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        statusEl.classList.remove("form__status--error");
+        statusEl.textContent = "Проверяем данные...";
+
+        const payload = {
+          email: form.email.value.trim(),
+          password: form.password.value
+        };
+
+        try {
+          const response = await fetch("api/login.php", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+
+          if (!response.ok) {
+            const body = await response.text();
+            let msg = "Неверный логин или пароль";
+            try {
+              const errJson = JSON.parse(body);
+              msg = errJson.error || msg;
+            } catch {
+              if (body) msg = body;
+            }
+            throw new Error(msg);
+          }
+
+          statusEl.textContent = "Успешный вход. Перенаправляем...";
+          // Здесь можно добавить redirect, когда будет готова страница профиля/кабинета
+        } catch (error) {
+          statusEl.classList.add("form__status--error");
+          statusEl.textContent = "Не удалось войти: " + error.message;
+          console.error(error);
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

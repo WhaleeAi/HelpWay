@@ -1,0 +1,254 @@
+/* ===== Base ===== */
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 18px;
+  line-height: 1.6;
+  color: #0f172a;
+  background: #f7f9fd;
+}
+
+a { color: inherit; text-decoration: none; }
+
+.container {
+  max-width: 1280px;
+  padding: 0 20px;
+  margin: 0 auto;
+}
+
+/* ===== Header ===== */
+.header {
+  padding: 28px 0;
+  background: #f7f9fd;
+}
+
+.header__inner{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.logo{
+  font-weight: 800;
+  font-size: 30px;
+  letter-spacing: -0.02em;
+}
+
+.nav{
+  display: flex;
+  align-items: center;
+  gap: 26px;
+}
+
+.nav__link{
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.nav__link:hover{
+  color: #0f172a;
+}
+
+/* ===== Buttons ===== */
+.btn{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 52px;
+  padding: 0 24px;
+  border-radius: 999px;
+  font-weight: 700;
+  border: 1px solid transparent;
+  white-space: nowrap;
+  font-size: 16px;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
+}
+
+.btn--primary{
+  background: #0f172a;
+  color: #fff;
+  box-shadow: 0 12px 26px rgba(0,0,0,0.12);
+}
+
+.btn--primary:hover{
+  opacity: 0.95;
+  transform: translateY(-1px);
+}
+
+.btn--outline{
+  background: transparent;
+  border-color: #b6c7c0;
+  color: #0f172a;
+}
+
+.btn--outline:hover{
+  background: rgba(15,23,42,0.06);
+}
+
+/* ===== Hero ===== */
+.hero{
+  padding: 96px 0 120px;
+}
+
+.hero__inner{
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 48px;
+  align-items: center;
+}
+
+.hero__title{
+  margin: 0 0 20px;
+  font-size: 48px;
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+}
+
+.hero__subtitle{
+  margin: 0 0 40px;
+  color: #475569;
+  line-height: 1.8;
+  max-width: 62ch;
+}
+
+.hero__actions{
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.hero__image{
+  display: flex;
+  justify-content: flex-end;
+}
+
+.hero__card{
+  width: min(440px, 100%);
+  height: 340px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #ffffff 0%, #eef5ff 100%);
+  box-shadow: 0 20px 48px rgba(0,0,0,0.12);
+  border: 1px solid rgba(17,17,17,0.06);
+}
+
+/* ===== Registration ===== */
+.register{
+  padding: 72px 0 96px;
+}
+
+.register__card{
+  max-width: 640px;
+  margin: 0 auto;
+  background: #fff;
+  border-radius: 18px;
+  padding: 32px;
+  box-shadow: 0 18px 44px rgba(0,0,0,0.1);
+  border: 1px solid rgba(17,17,17,0.06);
+}
+
+.register__title{
+  margin: 0 0 12px;
+  font-size: 30px;
+  line-height: 1.2;
+}
+
+.register__lead{
+  margin: 0 0 26px;
+  color: #475569;
+}
+
+.form{
+  display: grid;
+  gap: 18px;
+}
+
+.form__grid{
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.form__group{
+  display: grid;
+  gap: 8px;
+}
+
+.form__group label{
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.form__group input,
+.form__group select{
+  width: 100%;
+  height: 50px;
+  border-radius: 12px;
+  border: 1px solid #d4d8dd;
+  background: #f8fafc;
+  padding: 12px 14px;
+  font-size: 16px;
+  color: #0f172a;
+}
+
+.form__group input:focus,
+.form__group select:focus{
+  outline: none;
+  border-color: #0f172a;
+  box-shadow: 0 0 0 4px rgba(15,23,42,0.12);
+  background: #fff;
+}
+
+.form__hint{
+  margin: -4px 0 0;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.form__status{
+  min-height: 20px;
+  margin: 6px 0 0;
+  color: #14532d;
+  font-size: 14px;
+}
+
+.form__status--error{
+  color: #b91c1c;
+}
+
+.back-link{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 16px;
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.back-link:hover{
+  text-decoration: underline;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 900px){
+  .hero__inner{
+    grid-template-columns: 1fr;
+  }
+  .hero__image{
+    justify-content: flex-start;
+  }
+  .hero__title{
+    font-size: 40px;
+  }
+}
+
+@media (max-width: 640px){
+  .nav{ display: none; }
+  .logo{ font-size: 26px; }
+  .hero{ padding: 64px 0 88px; }
+  .hero__title{ font-size: 32px; }
+  .register__card{ padding: 24px; }
+}

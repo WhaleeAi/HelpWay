@@ -1,0 +1,19 @@
+<?php
+// Подключение к БД helpway. Укажите свои креды.
+$host = $cfg['host'] ?? '127.0.0.1';
+$db   = $cfg['db']   ?? 'helpway';
+$user = $cfg['user'] ?? 'root';
+$pass = $cfg['pass'] ?? '';
+$port = (int)($cfg['port'] ?? 3306);
+
+$dsn = "mysql:host={$host};port={$port};dbname={$db};charset=utf8mb4";
+try {
+    $pdo = new PDO($dsn, $user, $pass, [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+    ]);
+} catch (PDOException $e) {
+    http_response_code(500);
+    echo "DB connection failed: " . $e->getMessage();
+    exit;
+}
