@@ -8,7 +8,7 @@
 </head>
 
 <body>
-  <header class="header">
+  <header class="header header--overlay">
     <div class="container header__inner">
       <a class="logo" href="index.html">HelpWay</a>
 
@@ -24,6 +24,9 @@
 
   <main>
     <section class="hero">
+      <div class="hero__bg" aria-hidden="true"></div>
+      <div class="hero__overlay"></div>
+
       <div class="container hero__inner">
         <div class="hero__content">
           <h1 class="hero__title">Соединяем волонтеров и тех, кому нужна помощь</h1>
@@ -36,9 +39,50 @@
             <a class="btn btn--outline" href="register.html?role=client">Я клиент</a>
           </div>
         </div>
+      </div>
+    </section>
 
-        <div class="hero__image" aria-hidden="true">
-          <div class="hero__card"></div>
+    <section class="about" id="about">
+      <div class="container about__inner">
+        <div class="about__image" aria-hidden="true">
+          <img src="api/image.php?id=1" alt="HelpWay" />
+        </div>
+        <div class="about__content">
+          <h2 class="about__title">О нас</h2>
+          <p class="about__text">
+            HelpWay - платформа, где волонтеры и те, кому нужна помощь, быстро находят друг друга. Мы проверяем заявки, помогаем
+            подбирать задачи и поддерживаем сообщество, чтобы каждый получил нужную помощь вовремя.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="info-section" id="volunteers">
+      <div class="container info-section__inner">
+        <div class="info-section__content">
+          <h2 class="info-section__title">Волонтерам</h2>
+          <p class="info-section__text">
+            Мы помогаем волонтерам находить актуальные заявки и обеспечиваем всю организацию: от проверки данных до связи с
+            клиентами. Присоединяйтесь, чтобы быстрее находить задачи поблизости и приносить пользу.
+          </p>
+        </div>
+        <div class="info-section__image" aria-hidden="true">
+          <img src="api/image.php?id=1" alt="Волонтеры" />
+        </div>
+      </div>
+    </section>
+
+    <section class="info-section info-section--reverse" id="clients">
+      <div class="container info-section__inner">
+        <div class="info-section__image" aria-hidden="true">
+          <img src="api/image.php?id=2" alt="Клиенты" />
+        </div>
+        <div class="info-section__content">
+          <h2 class="info-section__title">Клиентам</h2>
+          <p class="info-section__text">
+            Оставьте заявку, выберите учреждение, укажите особенности и удобную дату — мы подберем волонтера и сопроводим вас.
+            Так вы быстрее получите помощь без лишних очередей и сложностей.
+          </p>
         </div>
       </div>
     </section>

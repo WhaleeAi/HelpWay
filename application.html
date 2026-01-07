@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Заявка на помощь | HelpWay</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+
+<body>
+  <header class="header">
+    <div class="container header__inner">
+      <a class="logo" href="index.html">HelpWay</a>
+      <nav class="nav" aria-label="Основная навигация">
+        <a class="nav__link" href="index.html#about">О нас</a>
+        <a class="nav__link" href="index.html#volunteers">Волонтерам</a>
+        <a class="nav__link" href="index.html#clients">Клиентам</a>
+      </nav>
+      <div class="header__actions">
+        <a class="btn btn--outline" href="index.html">На главную</a>
+        <a class="btn btn--primary" href="login.html">Войти</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="register">
+    <div class="container">
+      <div class="register__card">
+        <h1 class="register__title">Заявка на помощь</h1>
+        <p class="register__lead">Заполните информацию о клиенте и выберите учреждение для визита.</p>
+
+        <form id="applicationForm" class="form" novalidate>
+          <div class="form__group">
+            <label>Тип ограничений клиента</label>
+            <div class="form__options">
+              <label class="form__option">
+                <input type="checkbox" name="limitations" value="Маломобильность" />
+                Маломобильность
+              </label>
+              <label class="form__option">
+                <input type="checkbox" name="limitations" value="Пожилой возраст" />
+                Пожилой возраст
+              </label>
+              <label class="form__option">
+                <input type="checkbox" name="limitations" value="Проблемы со зрением" />
+                Проблемы со зрением
+              </label>
+              <label class="form__option">
+                <input type="checkbox" name="limitations" value="Проблемы со слухом" />
+                Проблемы со слухом
+              </label>
+            </div>
+          </div>
+
+          <div class="form__group">
+            <label for="comment">Комментарий</label>
+            <textarea id="comment" name="comment" placeholder="Дополнительные сведения о клиенте"></textarea>
+          </div>
+
+          <div class="form__group">
+            <label for="start_address">Адрес клиента</label>
+            <input id="start_address" name="start_address" type="text" placeholder="Москва, ..." required />
+          </div>
+
+          <div class="form__group">
+            <label for="go_date">Дата визита</label>
+            <input id="go_date" name="go_date" type="date" required />
+          </div>
+
+          <div class="form__group">
+            <label for="institution">Учреждение</label>
+            <select id="institution" name="institution" required>
+              <option value="">Загрузка списка...</option>
+            </select>
+            <div class="form__hint">Список формируется из поликлиник, МФЦ и управ.</div>
+          </div>
+
+          <button class="btn btn--primary" type="submit">Отправить заявку</button>
+          <p class="form__status" id="appStatus" aria-live="polite"></p>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    (() => {
+      const form = document.getElementById("applicationForm");
+      const statusEl = document.getElementById("appStatus");
+      const institutionSelect = document.getElementById("institution");
+      const dateInput = document.getElementById("go_date");
+
+      const today = new Date();
+      dateInput.value = today.toISOString().slice(0, 10);
+
+      const loadInstitutions = async () => {
+        try {
+          const response = await fetch("api/institutions.php");
+          if (!response.ok) {
+            throw new Error("Не удалось загрузить учреждения");
+          }
+          const data = await response.json();
+          institutionSelect.innerHTML = "";
+
+          const addGroup = (label, items, type) => {
+            if (!items || !items.length) return;
+            const group = document.createElement("optgroup");
+            group.label = label;
+            items.forEach((item) => {
+              const option = document.createElement("option");
+              option.value = `${type}:${item.id}`;
+              option.textContent = item.name || `${label} #${item.id}`;
+              group.appendChild(option);
+            });
+            institutionSelect.appendChild(group);
+          };
+
+          addGroup("МФЦ", data.mfc, "mfc");
+          addGroup("Поликлиники", data.polyclinics, "polyclinic");
+          addGroup("Управы", data.upravas, "uprava");
+
+          if (!institutionSelect.children.length) {
+            const option = document.createElement("option");
+            option.value = "";
+            option.textContent = "Учреждения не найдены";
+            institutionSelect.appendChild(option);
+          }
+        } catch (error) {
+          institutionSelect.innerHTML = "";
+          const option = document.createElement("option");
+          option.value = "";
+          option.textContent = "Ошибка загрузки учреждений";
+          institutionSelect.appendChild(option);
+          console.error(error);
+        }
+      };
+
+      loadInstitutions();
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        statusEl.classList.remove("form__status--error");
+
+        const limitations = Array.from(form.querySelectorAll('input[name="limitations"]:checked'))
+          .map((input) => input.value.trim())
+          .filter(Boolean);
+
+        if (!limitations.length) {
+          statusEl.classList.add("form__status--error");
+          statusEl.textContent = "Выберите хотя бы одно ограничение.";
+          return;
+        }
+
+        const institutionValue = institutionSelect.value;
+        if (!institutionValue) {
+          statusEl.classList.add("form__status--error");
+          statusEl.textContent = "Выберите учреждение.";
+          return;
+        }
+
+        const [endType, endId] = institutionValue.split(":");
+        const userId = localStorage.getItem("user_id");
+
+        if (!userId) {
+          statusEl.classList.add("form__status--error");
+          statusEl.textContent = "Сначала войдите в систему.";
+          return;
+        }
+
+        statusEl.textContent = "Отправляем заявку...";
+
+        const payload = {
+          user_id: Number(userId),
+          type: limitations.join(", "),
+          comment: form.comment.value.trim(),
+          start_address: form.start_address.value.trim(),
+          end_id: Number(endId),
+          end_type: endType,
+          go_date: form.go_date.value
+        };
+
+        try {
+          const response = await fetch("api/application.php", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+
+          const body = await response.text();
+          if (!response.ok) {
+            let msg = "Сервер вернул ошибку";
+            try {
+              const errJson = JSON.parse(body);
+              msg = errJson.error || msg;
+              if (errJson.detail) msg += ` (${errJson.detail})`;
+            } catch {
+              if (body) msg = body;
+            }
+            throw new Error(msg);
+          }
+
+          statusEl.textContent = "Заявка отправлена. Мы свяжемся с вами.";
+          form.reset();
+          dateInput.value = today.toISOString().slice(0, 10);
+          loadInstitutions();
+        } catch (error) {
+          statusEl.classList.add("form__status--error");
+          statusEl.textContent = "Не удалось отправить заявку: " + error.message;
+          console.error(error);
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

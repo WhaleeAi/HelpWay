@@ -80,8 +80,19 @@
             throw new Error(msg);
           }
 
+          const body = await response.json().catch(() => ({}));
+          if (body.user_id) {
+            localStorage.setItem("user_id", String(body.user_id));
+          }
+          if (body.role) {
+            localStorage.setItem("role", body.role);
+          }
           statusEl.textContent = "Успешный вход. Перенаправляем...";
-          // Здесь можно добавить redirect, когда будет готова страница профиля/кабинета
+          if (body.role === "client") {
+            window.location.href = "client.html";
+          } else {
+            window.location.href = "index.html";
+          }
         } catch (error) {
           statusEl.classList.add("form__status--error");
           statusEl.textContent = "Не удалось войти: " + error.message;

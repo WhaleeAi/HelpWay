@@ -24,14 +24,17 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL) || $password === '') {
 }
 
 try {
-$stmt = $pdo->prepare('SELECT id FROM users WHERE email = :email LIMIT 1');
+$stmt = $pdo->prepare('SELECT id, role FROM users WHERE email = :email LIMIT 1');
 $stmt->execute([':email' => $email]);
-$userId = $stmt->fetchColumn();
+$row = $stmt->fetch();
 
-    if (!$userId) {
-        http_response_code(401);
-        echo json_encode(['error' => 'Неверный логин или пароль']);
-        exit;
+$userId = $row['id'] ?? null;
+$role = $row['role'] ?? null;
+
+if (!$userId) {
+    http_response_code(401);
+    echo json_encode(['error' => 'Неверный логин или пароль']);
+    exit;
     }
 
 // Определяем колонку с хешем (password_hash или hash)
@@ -49,13 +52,13 @@ $stmt = $pdo->prepare("SELECT {$hashCol} FROM password_hashes WHERE user_id = :u
 $stmt->execute([':user_id' => $userId]);
 $hash = $stmt->fetchColumn();
 
-    if (!$hash || !password_verify($password, $hash)) {
-        http_response_code(401);
-        echo json_encode(['error' => 'Неверный логин или пароль']);
-        exit;
-    }
+if (!$hash || !password_verify($password, $hash)) {
+    http_response_code(401);
+    echo json_encode(['error' => 'Неверный логин или пароль']);
+    exit;
+}
 
-    echo json_encode(['ok' => true, 'user_id' => (int)$userId]);
+echo json_encode(['ok' => true, 'user_id' => (int)$userId, 'role' => $role]);
 } catch (Throwable $e) {
     http_response_code(500);
     echo json_encode(['error' => 'Ошибка сервера', 'detail' => $e->getMessage()]);

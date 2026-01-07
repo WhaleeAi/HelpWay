@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Хост: 127.0.0.1
--- Время создания: Янв 07 2026 г., 00:31
+-- Время создания: Янв 07 2026 г., 17:05
 -- Версия сервера: 10.4.32-MariaDB
 -- Версия PHP: 8.2.12
 
@@ -20,6 +20,24 @@ SET time_zone = "+00:00";
 --
 -- База данных: `helpway`
 --
+
+-- --------------------------------------------------------
+
+--
+-- Структура таблицы `application`
+--
+
+CREATE TABLE `application` (
+  `id` bigint(20) NOT NULL,
+  `user_id` bigint(20) NOT NULL,
+  `datetime` datetime NOT NULL DEFAULT current_timestamp(),
+  `type` varchar(100) NOT NULL,
+  `comment` text DEFAULT NULL,
+  `start_address` varchar(255) NOT NULL,
+  `end_id` bigint(20) NOT NULL,
+  `go_date` date NOT NULL,
+  `end_type` enum('mfc','polyclinic','uprava') NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -337,6 +355,13 @@ CREATE TABLE `users` (
 --
 
 --
+-- Индексы таблицы `application`
+--
+ALTER TABLE `application`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_application_user` (`user_id`);
+
+--
 -- Индексы таблицы `images`
 --
 ALTER TABLE `images`
@@ -473,6 +498,12 @@ ALTER TABLE `users`
 --
 
 --
+-- AUTO_INCREMENT для таблицы `application`
+--
+ALTER TABLE `application`
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT для таблицы `images`
 --
 ALTER TABLE `images`
@@ -565,6 +596,12 @@ ALTER TABLE `users`
 --
 -- Ограничения внешнего ключа сохраненных таблиц
 --
+
+--
+-- Ограничения внешнего ключа таблицы `application`
+--
+ALTER TABLE `application`
+  ADD CONSTRAINT `fk_application_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
 -- Ограничения внешнего ключа таблицы `mfc_availability_elements`
