@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Личный кабинет | HelpWay</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+
+<body>
+  <header class="header">
+    <div class="container header__inner">
+      <a class="logo" href="client.html">HelpWay</a>
+      <nav class="nav" aria-label="Основная навигация">
+        <a class="nav__link" href="applications.html">Мои заявки</a>
+        <a class="nav__link" href="profile.html">Профиль</a>
+      </nav>
+      <div class="header__actions">
+        <a class="btn btn--primary" href="client.html">Главная</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="register">
+    <div class="container">
+      <div class="register__card">
+        <h1 class="register__title">Личный кабинет</h1>
+        <p class="register__lead">Обновите ваши данные. Email должен быть уникальным.</p>
+
+        <form id="profileForm" class="form" novalidate>
+          <div class="form__grid">
+            <div class="form__group">
+              <label for="f_name">Имя</label>
+              <input id="f_name" name="f_name" type="text" required />
+            </div>
+            <div class="form__group">
+              <label for="l_name">Фамилия</label>
+              <input id="l_name" name="l_name" type="text" required />
+            </div>
+          </div>
+
+          <div class="form__group">
+            <label for="email">Почта</label>
+            <input id="email" name="email" type="email" required />
+          </div>
+
+          <div class="form__group">
+            <label for="city">Город</label>
+            <input id="city" name="city" type="text" placeholder="Москва" />
+          </div>
+
+          <div class="form__group">
+            <label for="address">Адрес</label>
+            <input id="address" name="address" type="text" placeholder="Улица, дом, подъезд" />
+          </div>
+
+          <div class="form__group">
+            <label for="role">Роль</label>
+            <select id="role" name="role">
+              <option value="client">Клиент</option>
+              <option value="volunteer">Волонтер</option>
+            </select>
+          </div>
+
+          <button class="btn btn--primary" type="submit">Сохранить</button>
+          <p class="form__status" id="profileStatus" aria-live="polite"></p>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    (() => {
+      const form = document.getElementById("profileForm");
+      const statusEl = document.getElementById("profileStatus");
+      const userId = localStorage.getItem("user_id");
+
+      if (!userId) {
+        statusEl.classList.add("form__status--error");
+        statusEl.textContent = "Сначала войдите в систему.";
+        form.querySelectorAll("input, select, button").forEach((el) => el.disabled = true);
+        return;
+      }
+
+      const fillForm = (data) => {
+        form.f_name.value = data.f_name || "";
+        form.l_name.value = data.l_name || "";
+        form.email.value = data.email || "";
+        form.city.value = data.city || "";
+        form.address.value = data.address || "";
+        form.role.value = data.role || "client";
+      };
+
+      const loadProfile = async () => {
+        statusEl.textContent = "Загружаем...";
+        try {
+          const res = await fetch(`api/profile.php?user_id=${encodeURIComponent(userId)}`);
+          const text = await res.text();
+          if (!res.ok) {
+            let msg = "Не удалось загрузить профиль";
+            try { const j = JSON.parse(text); msg = j.error || msg; } catch { if (text) msg = text; }
+            throw new Error(msg);
+          }
+          const data = JSON.parse(text);
+          fillForm(data);
+          statusEl.textContent = "";
+        } catch (err) {
+          statusEl.classList.add("form__status--error");
+          statusEl.textContent = err.message;
+        }
+      };
+
+      loadProfile();
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        statusEl.classList.remove("form__status--error");
+        statusEl.textContent = "Сохраняем...";
+
+        const payload = {
+          user_id: Number(userId),
+          f_name: form.f_name.value.trim(),
+          l_name: form.l_name.value.trim(),
+          email: form.email.value.trim(),
+          city: form.city.value.trim(),
+          address: form.address.value.trim(),
+          role: form.role.value
+        };
+
+        if (!payload.f_name || !payload.l_name || !payload.email) {
+          statusEl.classList.add("form__status--error");
+          statusEl.textContent = "Имя, фамилия и email обязательны.";
+          return;
+        }
+
+        try {
+          const res = await fetch("api/profile.php", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+
+          const text = await res.text();
+          if (!res.ok) {
+            let msg = "Не удалось сохранить";
+            try { const j = JSON.parse(text); msg = j.error || msg; } catch { if (text) msg = text; }
+            throw new Error(msg);
+          }
+
+          statusEl.textContent = "Сохранено.";
+          const data = JSON.parse(text);
+          fillForm(data);
+          if (data.role) {
+            localStorage.setItem("role", data.role);
+          }
+        } catch (err) {
+          statusEl.classList.add("form__status--error");
+          statusEl.textContent = err.message;
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

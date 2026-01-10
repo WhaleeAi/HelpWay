@@ -69,6 +69,11 @@
             </select>
           </div>
 
+          <div class="form__group">
+            <label for="address">Адрес (улица, дом)</label>
+            <input id="address" name="address" type="text" placeholder="ул. Пример, д. 1" required />
+          </div>
+
           <button class="btn btn--primary" type="submit">Зарегистрироваться</button>
           <p class="form__status" id="formStatus" aria-live="polite"></p>
         </form>
@@ -109,6 +114,7 @@
           l_name: form.l_name.value.trim(),
           f_name: form.f_name.value.trim(),
           city: form.city.value,
+          address: form.address.value.trim(),
           password: form.password.value
         };
 

@@ -10,15 +10,9 @@
 <body>
   <header class="header">
     <div class="container header__inner">
-      <a class="logo" href="index.html">HelpWay</a>
-      <nav class="nav" aria-label="Основная навигация">
-        <a class="nav__link" href="index.html#about">О нас</a>
-        <a class="nav__link" href="index.html#volunteers">Волонтерам</a>
-        <a class="nav__link" href="index.html#clients">Клиентам</a>
-      </nav>
+      <a class="logo" href="client.html">HelpWay</a>
       <div class="header__actions">
-        <a class="btn btn--outline" href="index.html">На главную</a>
-        <a class="btn btn--primary" href="login.html">Войти</a>
+        <a class="btn btn--outline" href="client.html">На главную</a>
       </div>
     </div>
   </header>
@@ -58,8 +52,8 @@
           </div>
 
           <div class="form__group">
-            <label for="start_address">Адрес клиента</label>
-            <input id="start_address" name="start_address" type="text" placeholder="Москва, ..." required />
+            <label for="start_adress">Адрес клиента</label>
+            <input id="start_adress" name="start_adress" type="text" placeholder="Москва, ..." required />
           </div>
 
           <div class="form__group">
@@ -172,7 +166,7 @@
           user_id: Number(userId),
           type: limitations.join(", "),
           comment: form.comment.value.trim(),
-          start_address: form.start_address.value.trim(),
+          start_adress: form.start_adress.value.trim(),
           end_id: Number(endId),
           end_type: endType,
           go_date: form.go_date.value

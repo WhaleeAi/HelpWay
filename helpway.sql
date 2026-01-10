@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Хост: 127.0.0.1
--- Время создания: Янв 07 2026 г., 17:05
+-- Время создания: Янв 09 2026 г., 20:45
 -- Версия сервера: 10.4.32-MariaDB
 -- Версия PHP: 8.2.12
 
@@ -111,7 +111,8 @@ CREATE TABLE `mfc_centers` (
   `railway_lines` varchar(255) DEFAULT NULL,
   `is_on_balance` varchar(50) DEFAULT NULL,
   `lon` double DEFAULT NULL,
-  `lat` double DEFAULT NULL
+  `lat` double DEFAULT NULL,
+  `near_stations` varchar(250) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -347,7 +348,10 @@ CREATE TABLE `users` (
   `l_name` varchar(100) NOT NULL,
   `f_name` varchar(100) NOT NULL,
   `city` varchar(100) DEFAULT NULL,
-  `role` varchar(10) NOT NULL DEFAULT 'client'
+  `role` varchar(10) NOT NULL DEFAULT 'client',
+  `address` varchar(500) DEFAULT NULL,
+  `lat` double DEFAULT NULL,
+  `lon` double DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -386,7 +390,8 @@ ALTER TABLE `mfc_availability_summary`
 -- Индексы таблицы `mfc_centers`
 --
 ALTER TABLE `mfc_centers`
-  ADD PRIMARY KEY (`global_id`);
+  ADD PRIMARY KEY (`global_id`),
+  ADD KEY `idx_mfc_coords` (`lat`,`lon`);
 
 --
 -- Индексы таблицы `mfc_metro_lines`
@@ -413,7 +418,8 @@ ALTER TABLE `password_hashes`
 -- Индексы таблицы `polyclinics`
 --
 ALTER TABLE `polyclinics`
-  ADD PRIMARY KEY (`global_id`);
+  ADD PRIMARY KEY (`global_id`),
+  ADD KEY `idx_poly_coords` (`lat`,`lon`);
 
 --
 -- Индексы таблицы `polyclinic_availability_elements`
@@ -470,7 +476,8 @@ ALTER TABLE `polyclinic_working_hours`
 -- Индексы таблицы `upravas`
 --
 ALTER TABLE `upravas`
-  ADD PRIMARY KEY (`global_id`);
+  ADD PRIMARY KEY (`global_id`),
+  ADD KEY `idx_upravas_coords` (`lat`,`lon`);
 
 --
 -- Индексы таблицы `uprava_phones`
@@ -491,7 +498,8 @@ ALTER TABLE `uprava_working_hours`
 --
 ALTER TABLE `users`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `email` (`email`);
+  ADD UNIQUE KEY `email` (`email`),
+  ADD KEY `idx_users_coords` (`lat`,`lon`);
 
 --
 -- AUTO_INCREMENT для сохранённых таблиц

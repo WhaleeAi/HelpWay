@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Мои заявки | HelpWay</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+
+<body>
+  <header class="header">
+    <div class="container header__inner">
+      <a class="logo" href="client.html">HelpWay</a>
+      <nav class="nav" aria-label="Основная навигация">
+        <a class="nav__link" href="applications.html">Мои заявки</a>
+        <a class="nav__link" href="profile.html">Профиль</a>
+      </nav>
+      <div class="header__actions">
+        <a class="btn btn--primary" href="client.html">Главная</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="register">
+    <div class="container">
+      <div class="applications__card">
+        <h1 class="register__title">Мои заявки</h1>
+        <p class="register__lead">Здесь отображаются все ваши заявки.</p>
+
+        <div class="table-wrapper">
+          <table class="table" id="userApplicationsTable">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Дата подачи</th>
+                <th>Тип ограничений</th>
+                <th>Адрес клиента</th>
+                <th>Учреждение</th>
+                <th>Дата визита</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td colspan="6">Загрузка...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    (() => {
+      const tableBody = document.querySelector("#userApplicationsTable tbody");
+      const userId = localStorage.getItem("user_id");
+
+      if (!userId) {
+        tableBody.innerHTML = '<tr><td colspan="6">Сначала войдите, чтобы увидеть заявки.</td></tr>';
+        return;
+      }
+
+      const load = async () => {
+        try {
+          const res = await fetch(`api/applications.php?user_id=${encodeURIComponent(userId)}`);
+          const text = await res.text();
+          if (!res.ok) {
+            let msg = "Ошибка загрузки заявок";
+            try {
+              const j = JSON.parse(text);
+              msg = j.error || msg;
+            } catch { if (text) msg = text; }
+            throw new Error(msg);
+          }
+          const items = JSON.parse(text);
+          if (!Array.isArray(items) || !items.length) {
+            tableBody.innerHTML = '<tr><td colspan="6">Заявок пока нет.</td></tr>';
+            return;
+          }
+          tableBody.innerHTML = items.map(item => {
+            const endName = item.end_name || `${item.end_type} #${item.end_id}`;
+            return `
+              <tr>
+                <td>${item.id}</td>
+                <td>${item.datetime || ""}</td>
+                <td>${item.type || ""}</td>
+                <td>${item.start_adress || ""}</td>
+                <td>${endName}</td>
+                <td>${item.go_date || ""}</td>
+              </tr>
+            `;
+          }).join("");
+        } catch (err) {
+          console.error(err);
+          tableBody.innerHTML = `<tr><td colspan="6">${err.message}</td></tr>`;
+        }
+      };
+
+      load();
+    })();
+  </script>
+</body>
+</html>
