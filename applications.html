@@ -25,22 +25,22 @@
     <div class="container">
       <div class="applications__card">
         <h1 class="register__title">Мои заявки</h1>
-        <p class="register__lead">Здесь отображаются все ваши заявки.</p>
+        <p class="register__lead">Нажмите на строку, чтобы открыть карточку заявки и выбрать волонтёра.</p>
 
         <div class="table-wrapper">
           <table class="table" id="userApplicationsTable">
             <thead>
               <tr>
                 <th>ID</th>
-                <th>Дата подачи</th>
-                <th>Тип ограничений</th>
+                <th>Дата создания</th>
+                <th>Тип ограничения</th>
                 <th>Адрес клиента</th>
                 <th>Учреждение</th>
                 <th>Дата визита</th>
               </tr>
             </thead>
             <tbody>
-              <tr><td colspan="6">Загрузка...</td></tr>
+              <tr><td colspan="6">Загружаем...</td></tr>
             </tbody>
           </table>
         </div>
@@ -48,13 +48,14 @@
     </div>
   </main>
 
+  <script src="js/app-modal.js"></script>
   <script>
     (() => {
       const tableBody = document.querySelector("#userApplicationsTable tbody");
       const userId = localStorage.getItem("user_id");
 
       if (!userId) {
-        tableBody.innerHTML = '<tr><td colspan="6">Сначала войдите, чтобы увидеть заявки.</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="6">Нужно войти, чтобы смотреть заявки.</td></tr>';
         return;
       }
 
@@ -63,7 +64,7 @@
           const res = await fetch(`api/applications.php?user_id=${encodeURIComponent(userId)}`);
           const text = await res.text();
           if (!res.ok) {
-            let msg = "Ошибка загрузки заявок";
+            let msg = "Не удалось загрузить заявки";
             try {
               const j = JSON.parse(text);
               msg = j.error || msg;
@@ -72,22 +73,26 @@
           }
           const items = JSON.parse(text);
           if (!Array.isArray(items) || !items.length) {
-            tableBody.innerHTML = '<tr><td colspan="6">Заявок пока нет.</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="6">Пока заявок нет.</td></tr>';
             return;
           }
           tableBody.innerHTML = items.map(item => {
             const endName = item.end_name || `${item.end_type} #${item.end_id}`;
             return `
-              <tr>
+              <tr class="table__row--clickable" data-id="${item.id}">
                 <td>${item.id}</td>
                 <td>${item.datetime || ""}</td>
                 <td>${item.type || ""}</td>
-                <td>${item.start_adress || ""}</td>
+                <td>${item.start_address || ""}</td>
                 <td>${endName}</td>
                 <td>${item.go_date || ""}</td>
               </tr>
             `;
           }).join("");
+
+          document.querySelectorAll("#userApplicationsTable tbody tr.table__row--clickable").forEach((row) => {
+            row.addEventListener("click", () => AppModal.open(row.dataset.id, { allowAccept: true }));
+          });
         } catch (err) {
           console.error(err);
           tableBody.innerHTML = `<tr><td colspan="6">${err.message}</td></tr>`;

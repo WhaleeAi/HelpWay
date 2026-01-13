@@ -12,7 +12,7 @@
     <div class="container header__inner">
       <a class="logo" href="client.html" id="homeLogo">HelpWay</a>
       <nav class="nav" aria-label="Основная навигация">
-        <a class="nav__link" href="applications.html" id="applications">Заявки</a>
+        <a class="nav__link" href="applications.html" id="applications">Мои заявки</a>
         <a class="nav__link" href="profile.html">Профиль</a>
       </nav>
       <div class="header__actions">
@@ -63,6 +63,7 @@
           </div>
 
           <button class="btn btn--primary" type="submit">Сохранить</button>
+          <button class="btn btn--outline" type="button" id="logoutBtn">Выйти</button>
           <p class="form__status" id="profileStatus" aria-live="polite"></p>
         </form>
       </div>
@@ -77,13 +78,16 @@
       const homeLogo = document.getElementById("homeLogo");
       const homeButton = document.getElementById("homeButton");
       const applications = document.getElementById("applications");
+      const logoutBtn = document.getElementById("logoutBtn");
 
       const applyHomeLink = (role) => {
         const target = role === "volunteer" ? "volunteer.html" : "client.html";
         const target2 = role === "volunteer" ? "volView.html" : "applications.html";
+        const target3 = role === "volunteer" ? "Заявки" : "Мои заявки";
         if (homeLogo) homeLogo.href = target;
         if (homeButton) homeButton.href = target;
         if (applications) applications.href = target2;
+        if (applications) applications.textContent = target3;
       };
 
       if (!userId) {
@@ -175,6 +179,14 @@
           statusEl.textContent = err.message;
         }
       });
+
+      if (logoutBtn) {
+        logoutBtn.addEventListener("click", () => {
+          localStorage.removeItem("user_id");
+          localStorage.removeItem("role");
+          window.location.href = "index.html";
+        });
+      }
     })();
   </script>
 </body>

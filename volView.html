@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Заявки | HelpWay</title>
+  <title>Все заявки | HelpWay</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
 
@@ -25,22 +25,22 @@
     <div class="container">
       <div class="applications__card">
         <h1 class="register__title">Все заявки</h1>
-        <p class="register__lead">Список заявок для волонтеров.</p>
+        <p class="register__lead">Нажмите на строку, чтобы открыть карточку заявки и откликнуться.</p>
 
         <div class="table-wrapper">
           <table class="table" id="allApplicationsTable">
             <thead>
               <tr>
                 <th>ID</th>
-                <th>Дата подачи</th>
-                <th>Тип ограничений</th>
+                <th>Дата создания</th>
+                <th>Тип ограничения</th>
                 <th>Адрес клиента</th>
                 <th>Учреждение</th>
                 <th>Дата визита</th>
               </tr>
             </thead>
             <tbody>
-              <tr><td colspan="6">Загрузка...</td></tr>
+              <tr><td colspan="6">Загружаем...</td></tr>
             </tbody>
           </table>
         </div>
@@ -48,9 +48,112 @@
     </div>
   </main>
 
+  <div class="modal" id="applicationModal" aria-hidden="true">
+    <div class="modal__overlay" data-close="true"></div>
+    <div class="modal__dialog" role="dialog" aria-modal="true" aria-labelledby="appModalTitle">
+      <div class="modal__header">
+        <h3 class="modal__title" id="appModalTitle">Заявка</h3>
+        <button class="modal__close" type="button" aria-label="Закрыть" data-close="true">&times;</button>
+      </div>
+      <div class="modal__body" id="appModalBody">Загружаем...</div>
+      <div class="modal__footer" id="appModalFooter"></div>
+    </div>
+  </div>
+
   <script>
     (() => {
       const tableBody = document.querySelector("#allApplicationsTable tbody");
+      const modal = document.getElementById("applicationModal");
+      const modalBody = document.getElementById("appModalBody");
+      const modalFooter = document.getElementById("appModalFooter");
+      const userId = localStorage.getItem("user_id");
+
+      const closeModal = () => {
+        modal.classList.remove("is-active");
+        document.body.style.overflow = "";
+      };
+
+      modal.addEventListener("click", (e) => {
+        if (e.target.dataset.close) closeModal();
+      });
+
+      const renderApplication = (app) => {
+        const endName = app.end_name || `${app.end_type || "место"} #${app.end_id || ""}`;
+        const status = app.status || "pending";
+        modalBody.innerHTML = `
+          <div class="app-detail">
+            <div class="app-detail__row"><span class="app-detail__label">Тип ограничения:</span><span>${app.type || "—"}</span></div>
+            <div class="app-detail__row"><span class="app-detail__label">Адрес клиента:</span><span>${app.start_address || "—"}</span></div>
+            <div class="app-detail__row"><span class="app-detail__label">Учреждение:</span><span>${endName}</span></div>
+            <div class="app-detail__row"><span class="app-detail__label">Дата визита:</span><span>${app.go_date || "—"}</span></div>
+            <div class="app-detail__row"><span class="app-detail__label">Комментарий:</span><span>${app.comment || "—"}</span></div>
+            <div class="app-detail__row"><span class="app-detail__label">Статус:</span><span class="badge">${status}</span></div>
+          </div>
+          <div class="form__group">
+            <label for="respondMessage">Сообщение клиенту</label>
+            <textarea id="respondMessage" rows="3" placeholder="Напишите, чем сможете помочь"></textarea>
+          </div>
+        `;
+
+        modalFooter.innerHTML = `
+          <button class="btn btn--outline btn--small" type="button" data-close="true">Закрыть</button>
+          <button class="btn btn--primary btn--small" type="button" id="respondBtn">Откликнуться</button>
+        `;
+
+        const respondBtn = document.getElementById("respondBtn");
+        respondBtn.addEventListener("click", async () => {
+          if (!userId) {
+            alert("Нужно войти как волонтер, чтобы откликаться.");
+            return;
+          }
+          respondBtn.disabled = true;
+          respondBtn.textContent = "Отправляем...";
+          const answer = document.getElementById("respondMessage").value.trim() || "Готов помочь";
+          try {
+            const res = await fetch("api/application_respond.php", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                application_id: app.id,
+                volunteer_id: Number(userId),
+                answer
+              })
+            });
+            const text = await res.text();
+            if (!res.ok) {
+              let msg = "Не удалось отправить отклик";
+              try { const j = JSON.parse(text); msg = j.error || msg; } catch { if (text) msg = text; }
+              throw new Error(msg);
+            }
+            respondBtn.textContent = "Отклик отправлен";
+          } catch (err) {
+            alert(err.message);
+            respondBtn.disabled = false;
+            respondBtn.textContent = "Откликнуться";
+          }
+        });
+      };
+
+      const openApplication = async (id) => {
+        modal.classList.add("is-active");
+        document.body.style.overflow = "hidden";
+        modalBody.textContent = "Загружаем...";
+        modalFooter.innerHTML = "";
+        try {
+          const res = await fetch(`api/application_detail.php?id=${encodeURIComponent(id)}`);
+          const text = await res.text();
+          if (!res.ok) {
+            let msg = "Не удалось загрузить заявку";
+            try { const j = JSON.parse(text); msg = j.error || msg; } catch { if (text) msg = text; }
+            throw new Error(msg);
+          }
+          const data = JSON.parse(text);
+          renderApplication(data.application);
+        } catch (err) {
+          modalBody.textContent = err.message;
+        }
+      };
+
       fetch("api/applications.php?limit=200")
         .then(async (res) => {
           const text = await res.text();
@@ -63,13 +166,13 @@
         })
         .then((items) => {
           if (!Array.isArray(items) || !items.length) {
-            tableBody.innerHTML = '<tr><td colspan="6">Заявок пока нет.</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="6">Пока нет доступных заявок.</td></tr>';
             return;
           }
           tableBody.innerHTML = items.map((item) => {
             const endName = item.end_name || `${item.end_type} #${item.end_id}`;
             return `
-              <tr>
+              <tr class="table__row--clickable" data-id="${item.id}">
                 <td>${item.id}</td>
                 <td>${item.datetime || ""}</td>
                 <td>${item.type || ""}</td>
@@ -79,6 +182,10 @@
               </tr>
             `;
           }).join("");
+
+          document.querySelectorAll("#allApplicationsTable tbody tr.table__row--clickable").forEach((row) => {
+            row.addEventListener("click", () => openApplication(row.dataset.id));
+          });
         })
         .catch((err) => {
           console.error(err);

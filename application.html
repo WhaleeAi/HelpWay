@@ -52,8 +52,8 @@
           </div>
 
           <div class="form__group">
-            <label for="start_adress">Адрес клиента</label>
-            <input id="start_adress" name="start_adress" type="text" placeholder="Москва, ..." required />
+            <label for="start_address">Адрес клиента</label>
+            <input id="start_address" name="start_address" type="text" placeholder="Москва, ..." required />
           </div>
 
           <div class="form__group">
@@ -186,11 +186,11 @@
           const data = JSON.parse(text);
           if (data.address) {
             form.start_address.value = data.address;
+            }
+          } catch (err) {
+            console.error(err);
           }
-        } catch (err) {
-          console.error(err);
-        }
-      };
+        };
 
       loadUserAddress();
 
@@ -230,7 +230,7 @@
           user_id: Number(userId),
           type: limitations.join(", "),
           comment: form.comment.value.trim(),
-          start_adress: form.start_adress.value.trim(),
+          start_address: form.start_address.value.trim(),
           end_id: Number(endId),
           end_type: endType,
           go_date: form.go_date.value

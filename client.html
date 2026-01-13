@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Кабинет клиента | HelpWay</title>
+  <title>Клиент | HelpWay</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
 
@@ -32,12 +32,12 @@
 
       <div class="container hero__inner">
         <div class="hero__content">
-          <h1 class="hero__title">Запишем вас туда, где нужна помощь</h1>
+          <h1 class="hero__title">Вы не одни — мы рядом, чтобы помочь</h1>
           <p class="hero__subtitle">
-            Здесь вы оформите заявки, увидите ближайшие учреждения и сможете выбрать удобное время визита.
+            Оставьте заявку, расскажите о своих особенностях и мы подберем ближайшие учреждения, в которых вам окажут нужную помощь.
           </p>
           <div class="hero__actions">
-            <a class="btn btn--primary btn--large" href="application.html">Оставить заявку</a>
+            <a class="btn btn--primary btn--large" href="application.html">Отправить заявку</a>
           </div>
         </div>
       </div>
@@ -51,15 +51,15 @@
             <thead>
               <tr>
                 <th>ID</th>
-                <th>Дата подачи</th>
-                <th>Тип ограничений</th>
+                <th>Дата создания</th>
+                <th>Тип ограничения</th>
                 <th>Адрес клиента</th>
                 <th>Учреждение</th>
                 <th>Дата визита</th>
               </tr>
             </thead>
             <tbody>
-              <tr><td colspan="6">Загрузка...</td></tr>
+              <tr><td colspan="6">Загружаем...</td></tr>
             </tbody>
           </table>
         </div>
@@ -85,7 +85,9 @@
       </div>
     </div>
   </footer>
+
   <script src="https://api-maps.yandex.ru/2.1/?lang=ru_RU&apikey=0ef553e7-67a5-434b-9c61-f75cca415b38"></script>
+  <script src="js/app-modal.js"></script>
   <script>
     (() => {
       const userId = localStorage.getItem("user_id");
@@ -93,15 +95,59 @@
       const cardsContainer = document.getElementById("nearestCards");
 
       if (!userId) {
-        tableBody.innerHTML = '<tr><td colspan="6">Сначала войдите, чтобы увидеть заявки.</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="6">Авторизуйтесь, чтобы просматривать заявки.</td></tr>';
         return;
       }
 
-      fetch(`api/applications.php?user_id=${encodeURIComponent(userId)}`)
+      const loadApplications = () => {
+        fetch(`api/applications.php?user_id=${encodeURIComponent(userId)}`)
+          .then(async (res) => {
+            const text = await res.text();
+            if (!res.ok) {
+              let msg = "Не удалось загрузить заявки";
+              try { const j = JSON.parse(text); msg = j.error || msg; } catch { if (text) msg = text; }
+              throw new Error(msg);
+            }
+            return JSON.parse(text);
+          })
+          .then((items) => {
+            if (!Array.isArray(items) || !items.length) {
+              tableBody.innerHTML = '<tr><td colspan="6">Пока заявок нет.</td></tr>';
+              return;
+            }
+            tableBody.innerHTML = items.map((item) => {
+              const endName = item.end_name || `${item.end_type} #${item.end_id}`;
+              const goDate = item.go_date || "";
+              const created = item.datetime || "";
+              return `
+                <tr class="table__row--clickable" data-id="${item.id}">
+                  <td>${item.id}</td>
+                  <td>${created}</td>
+                  <td>${item.type || ""}</td>
+                  <td>${item.start_address || ""}</td>
+                  <td>${endName}</td>
+                  <td>${goDate}</td>
+                </tr>
+              `;
+            }).join("");
+
+            document.querySelectorAll("#applicationsTable tbody tr.table__row--clickable").forEach((row) => {
+              row.addEventListener("click", () => AppModal.open(row.dataset.id, { allowAccept: true }));
+            });
+          })
+          .catch((err) => {
+            console.error(err);
+            tableBody.innerHTML = `<tr><td colspan="6">${err.message}</td></tr>`;
+          });
+      };
+
+      loadApplications();
+
+      fetch(`api/nearest.php?user_id=${encodeURIComponent(userId)}`)
         .then(async (res) => {
           const text = await res.text();
           if (!res.ok) {
-            let msg = "Ошибка загрузки заявок";
+            let msg = "Не удалось загрузить ближайшие учреждения";
             try {
               const j = JSON.parse(text);
               msg = j.error || msg;
@@ -112,88 +158,48 @@
           }
           return JSON.parse(text);
         })
-        .then((items) => {
-          if (!Array.isArray(items) || !items.length) {
-            tableBody.innerHTML = '<tr><td colspan="6">Заявок пока нет.</td></tr>';
-            return;
-          }
-          tableBody.innerHTML = items.map((item) => {
-            const endName = item.end_name || `${item.end_type} #${item.end_id}`;
-            const goDate = item.go_date || "";
-            const created = item.datetime || "";
-            return `
-              <tr>
-                <td>${item.id}</td>
-                <td>${created}</td>
-                <td>${item.type || ""}</td>
-                <td>${item.start_adress || ""}</td>
-                <td>${endName}</td>
-                <td>${goDate}</td>
-              </tr>
-            `;
-          }).join("");
-        })
-        .catch((err) => {
-          console.error(err);
-          tableBody.innerHTML = `<tr><td colspan="6">${err.message}</td></tr>`;
-        });
-
-      if (userId) {
-        fetch(`api/nearest.php?user_id=${encodeURIComponent(userId)}`)
-          .then(async (res) => {
-            const text = await res.text();
-            if (!res.ok) {
-              let msg = "Не удалось загрузить ближайшие учреждения";
-              try {
-                const j = JSON.parse(text);
-                msg = j.error || msg;
-              } catch {
-                if (text) msg = text;
-              }
-              throw new Error(msg);
-            }
-            return JSON.parse(text);
-          })
-          .then((data) => {
-            if (!data.user || !data.points) return;
-            ymaps.ready(() => {
-           const map = new ymaps.Map("map", {
+        .then((data) => {
+          if (!data.user || !data.points) return;
+          ymaps.ready(() => {
+            const map = new ymaps.Map("map", {
               center: [data.user.lat, data.user.lon],
               zoom: 12
             });
 
-              const userPlacemark = new ymaps.Placemark([data.user.lat, data.user.lon], {
-                balloonContent: "Вы здесь"
-              }, {
-                preset: 'islands#redIcon'
-              });
-              map.geoObjects.add(userPlacemark);
+            const userPlacemark = new ymaps.Placemark([data.user.lat, data.user.lon], {
+              balloonContent: "Это вы"
+            }, {
+              preset: 'islands#redIcon'
+            });
+            map.geoObjects.add(userPlacemark);
 
-              data.points.forEach((p) => {
-                const placemark = new ymaps.Placemark([p.lat, p.lon], {
-                  balloonContent: `<strong>${p.name || p.type}</strong><br>${p.address || ''}<br>${p.distance_km.toFixed(1)} км`
-                }, {
-                  preset: 'islands#blueIcon'
-                });
+            data.points.forEach((p) => {
+              const placemark = new ymaps.Placemark([p.lat, p.lon], {
+                balloonContent: `<strong>${p.name || p.type}</strong><br>${p.address || ''}<br>${p.distance_km.toFixed(1)} км`
+              }, {
+                preset: 'islands#blueIcon'
+              });
               map.geoObjects.add(placemark);
             });
+          });
 
-            if (cardsContainer) {
-              cardsContainer.innerHTML = data.points.map((p) => `
+          if (cardsContainer) {
+            cardsContainer.innerHTML = data.points.map((p) => {
+              const metroLine = (p.type === "mfc" && p.metro) ? `<div class="card__meta">Метро: ${p.metro}</div>` : "";
+              return `
                 <div class="card">
                   <div class="card__title">${p.name || p.type}</div>
                   <div class="card__text">${p.address || ''}</div>
-                  <div class="card__meta">${p.metro ? `Метро: ${p.metro}` : 'Метро: не указано'}</div>
+                  ${metroLine}
                   <div class="card__meta">~${p.distance_km.toFixed(1)} км</div>
                 </div>
-              `).join("");
-            }
-          });
+              `;
+            }).join("");
+          }
         })
-          .catch((err) => {
-            console.error(err);
-          });
-      }
+        .catch((err) => {
+          console.error(err);
+        });
     })();
   </script>
 </body>

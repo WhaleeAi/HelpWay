@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Хост: 127.0.0.1
--- Время создания: Янв 09 2026 г., 20:45
+-- Время создания: Янв 13 2026 г., 13:21
 -- Версия сервера: 10.4.32-MariaDB
 -- Версия PHP: 8.2.12
 
@@ -36,8 +36,25 @@ CREATE TABLE `application` (
   `start_address` varchar(255) NOT NULL,
   `end_id` bigint(20) NOT NULL,
   `go_date` date NOT NULL,
-  `end_type` enum('mfc','polyclinic','uprava') NOT NULL
+  `end_type` enum('mfc','polyclinic','uprava') NOT NULL,
+  `accepted_volunteer_id` bigint(20) DEFAULT NULL,
+  `status` enum('open','confirmed','closed') NOT NULL DEFAULT 'open'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Структура таблицы `application_volunteer`
+--
+
+CREATE TABLE `application_volunteer` (
+  `id` bigint(20) NOT NULL,
+  `application_id` bigint(20) NOT NULL,
+  `volunteer_id` bigint(20) NOT NULL,
+  `answer` text DEFAULT NULL,
+  `status` enum('pending','accepted','rejected') NOT NULL DEFAULT 'pending',
+  `created_at` datetime NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -363,7 +380,16 @@ CREATE TABLE `users` (
 --
 ALTER TABLE `application`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `fk_application_user` (`user_id`);
+  ADD KEY `fk_application_user` (`user_id`),
+  ADD KEY `fk_accepted_volunteer` (`accepted_volunteer_id`);
+
+--
+-- Индексы таблицы `application_volunteer`
+--
+ALTER TABLE `application_volunteer`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_application_volunteer` (`application_id`,`volunteer_id`),
+  ADD KEY `fk_appvol_volunteer` (`volunteer_id`);
 
 --
 -- Индексы таблицы `images`
@@ -512,6 +538,12 @@ ALTER TABLE `application`
   MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT для таблицы `application_volunteer`
+--
+ALTER TABLE `application_volunteer`
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT для таблицы `images`
 --
 ALTER TABLE `images`
@@ -609,7 +641,15 @@ ALTER TABLE `users`
 -- Ограничения внешнего ключа таблицы `application`
 --
 ALTER TABLE `application`
+  ADD CONSTRAINT `fk_accepted_volunteer` FOREIGN KEY (`accepted_volunteer_id`) REFERENCES `users` (`id`),
   ADD CONSTRAINT `fk_application_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Ограничения внешнего ключа таблицы `application_volunteer`
+--
+ALTER TABLE `application_volunteer`
+  ADD CONSTRAINT `fk_appvol_application` FOREIGN KEY (`application_id`) REFERENCES `application` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_appvol_volunteer` FOREIGN KEY (`volunteer_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
 -- Ограничения внешнего ключа таблицы `mfc_availability_elements`
