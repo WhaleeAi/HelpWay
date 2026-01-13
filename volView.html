@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Заявки | HelpWay</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+
+<body>
+  <header class="header">
+    <div class="container header__inner">
+      <a class="logo" href="volunteer.html">HelpWay</a>
+      <nav class="nav" aria-label="Основная навигация">
+        <a class="nav__link" href="volView.html">Заявки</a>
+        <a class="nav__link" href="profile.html">Профиль</a>
+      </nav>
+      <div class="header__actions">
+        <a class="btn btn--primary" href="volunteer.html">Главная</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="register">
+    <div class="container">
+      <div class="applications__card">
+        <h1 class="register__title">Все заявки</h1>
+        <p class="register__lead">Список заявок для волонтеров.</p>
+
+        <div class="table-wrapper">
+          <table class="table" id="allApplicationsTable">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Дата подачи</th>
+                <th>Тип ограничений</th>
+                <th>Адрес клиента</th>
+                <th>Учреждение</th>
+                <th>Дата визита</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td colspan="6">Загрузка...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    (() => {
+      const tableBody = document.querySelector("#allApplicationsTable tbody");
+      fetch("api/applications.php?limit=200")
+        .then(async (res) => {
+          const text = await res.text();
+          if (!res.ok) {
+            let msg = "Не удалось загрузить заявки";
+            try { const j = JSON.parse(text); msg = j.error || msg; } catch { if (text) msg = text; }
+            throw new Error(msg);
+          }
+          return JSON.parse(text);
+        })
+        .then((items) => {
+          if (!Array.isArray(items) || !items.length) {
+            tableBody.innerHTML = '<tr><td colspan="6">Заявок пока нет.</td></tr>';
+            return;
+          }
+          tableBody.innerHTML = items.map((item) => {
+            const endName = item.end_name || `${item.end_type} #${item.end_id}`;
+            return `
+              <tr>
+                <td>${item.id}</td>
+                <td>${item.datetime || ""}</td>
+                <td>${item.type || ""}</td>
+                <td>${item.start_address || ""}</td>
+                <td>${endName}</td>
+                <td>${item.go_date || ""}</td>
+              </tr>
+            `;
+          }).join("");
+        })
+        .catch((err) => {
+          console.error(err);
+          tableBody.innerHTML = `<tr><td colspan="6">${err.message}</td></tr>`;
+        });
+    })();
+  </script>
+</body>
+</html>

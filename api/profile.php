@@ -23,10 +23,7 @@ if ($method === 'GET') {
         exit;
     }
     try {
-        $selectCols = ['id', 'email', 'l_name', 'f_name', 'city', 'role'];
-        if (userHasColumn($pdo, 'address')) {
-            $selectCols[] = 'address';
-        }
+        $selectCols = ['id', 'email', 'l_name', 'f_name', 'city', 'role', 'address'];
         $sql = 'SELECT ' . implode(', ', $selectCols) . ' FROM users WHERE id = :id LIMIT 1';
         $stmt = $pdo->prepare($sql);
         $stmt->execute([':id' => $userId]);
@@ -95,10 +92,8 @@ if ($method === 'POST') {
             'l_name' => $lName,
             'f_name' => $fName,
             'city' => $city !== '' ? $city : null,
+            'address' => $address !== '' ? $address : null,
         ];
-        if (userHasColumn($pdo, 'address')) {
-            $fields['address'] = $address !== '' ? $address : null;
-        }
         if ($role !== null) {
             $fields['role'] = $role;
         }
@@ -116,10 +111,7 @@ if ($method === 'POST') {
         $stmt->execute($params);
 
         // Вернуть обновленные данные
-        $selectCols = ['id', 'email', 'l_name', 'f_name', 'city', 'role'];
-        if (userHasColumn($pdo, 'address')) {
-            $selectCols[] = 'address';
-        }
+        $selectCols = ['id', 'email', 'l_name', 'f_name', 'city', 'role', 'address'];
         $stmt = $pdo->prepare('SELECT ' . implode(', ', $selectCols) . ' FROM users WHERE id = :id LIMIT 1');
         $stmt->execute([':id' => $userId]);
         $row = $stmt->fetch();

@@ -10,13 +10,13 @@
 <body>
   <header class="header">
     <div class="container header__inner">
-      <a class="logo" href="client.html">HelpWay</a>
+      <a class="logo" href="client.html" id="homeLogo">HelpWay</a>
       <nav class="nav" aria-label="Основная навигация">
-        <a class="nav__link" href="applications.html">Мои заявки</a>
+        <a class="nav__link" href="applications.html" id="applications">Заявки</a>
         <a class="nav__link" href="profile.html">Профиль</a>
       </nav>
       <div class="header__actions">
-        <a class="btn btn--primary" href="client.html">Главная</a>
+        <a class="btn btn--primary" href="client.html" id="homeButton">Главная</a>
       </div>
     </div>
   </header>
@@ -74,6 +74,17 @@
       const form = document.getElementById("profileForm");
       const statusEl = document.getElementById("profileStatus");
       const userId = localStorage.getItem("user_id");
+      const homeLogo = document.getElementById("homeLogo");
+      const homeButton = document.getElementById("homeButton");
+      const applications = document.getElementById("applications");
+
+      const applyHomeLink = (role) => {
+        const target = role === "volunteer" ? "volunteer.html" : "client.html";
+        const target2 = role === "volunteer" ? "volView.html" : "applications.html";
+        if (homeLogo) homeLogo.href = target;
+        if (homeButton) homeButton.href = target;
+        if (applications) applications.href = target2;
+      };
 
       if (!userId) {
         statusEl.classList.add("form__status--error");
@@ -82,6 +93,8 @@
         return;
       }
 
+      applyHomeLink(localStorage.getItem("role"));
+
       const fillForm = (data) => {
         form.f_name.value = data.f_name || "";
         form.l_name.value = data.l_name || "";
@@ -89,6 +102,10 @@
         form.city.value = data.city || "";
         form.address.value = data.address || "";
         form.role.value = data.role || "client";
+        if (data.role) {
+          applyHomeLink(data.role);
+          localStorage.setItem("role", data.role);
+        }
       };
 
       const loadProfile = async () => {
