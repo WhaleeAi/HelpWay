@@ -12,7 +12,7 @@
     <div class="container header__inner">
       <a class="logo" href="client.html">HelpWay</a>
       <nav class="nav" aria-label="Основная навигация">
-        <a class="nav__link" href="applications.html">Мои заявки</a>
+        <a class="nav__link" href="applications.html">Все заявки</a>
         <a class="nav__link" href="profile.html">Профиль</a>
       </nav>
       <div class="header__actions">
@@ -37,10 +37,11 @@
                 <th>Адрес клиента</th>
                 <th>Учреждение</th>
                 <th>Дата визита</th>
+                <th>Статус</th>
               </tr>
             </thead>
             <tbody>
-              <tr><td colspan="6">Загружаем...</td></tr>
+              <tr><td colspan="7">Загружаем...</td></tr>
             </tbody>
           </table>
         </div>
@@ -55,9 +56,19 @@
       const userId = localStorage.getItem("user_id");
 
       if (!userId) {
-        tableBody.innerHTML = '<tr><td colspan="6">Нужно войти, чтобы смотреть заявки.</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="7">Нужно войти, чтобы смотреть заявки.</td></tr>';
         return;
       }
+
+      const renderStatusIcon = (status) => {
+        if (status === "closed") {
+          return '<span class="status-icon status-icon--closed" title="Закрыта">✔</span>';
+        }
+        if (!status || status === "open") {
+          return '<span class="status-icon status-icon--pending" title="Ожидает откликов">⏳</span>';
+        }
+        return '<span class="status-icon status-icon--ok" title="Есть отклик">✔</span>';
+      };
 
       const load = async () => {
         try {
@@ -73,7 +84,7 @@
           }
           const items = JSON.parse(text);
           if (!Array.isArray(items) || !items.length) {
-            tableBody.innerHTML = '<tr><td colspan="6">Пока заявок нет.</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="7">Пока заявок нет.</td></tr>';
             return;
           }
           tableBody.innerHTML = items.map(item => {
@@ -86,16 +97,17 @@
                 <td>${item.start_address || ""}</td>
                 <td>${endName}</td>
                 <td>${item.go_date || ""}</td>
+                <td>${renderStatusIcon(item.status)}</td>
               </tr>
             `;
           }).join("");
 
           document.querySelectorAll("#userApplicationsTable tbody tr.table__row--clickable").forEach((row) => {
-            row.addEventListener("click", () => AppModal.open(row.dataset.id, { allowAccept: true }));
+            row.addEventListener("click", () => AppModal.open(row.dataset.id, { allowAccept: true, allowClose: true }));
           });
         } catch (err) {
           console.error(err);
-          tableBody.innerHTML = `<tr><td colspan="6">${err.message}</td></tr>`;
+          tableBody.innerHTML = `<tr><td colspan="7">${err.message}</td></tr>`;
         }
       };
 

@@ -51,7 +51,14 @@
     `).join("");
   };
 
-  const renderApplication = (app, volunteers, allowAccept) => {
+  const renderStatusBadge = (status) => {
+    if (status === 'closed') {
+      return '<span class="badge badge--closed">closed</span>';
+    }
+    return `<span class="badge">${status || 'pending'}</span>`;
+  };
+
+  const renderApplication = (app, volunteers, allowAccept, allowClose) => {
     const endName = app.end_name || `${app.end_type || "место"} #${app.end_id || ""}`;
     const status = app.status || "pending";
     modalBody.innerHTML = `
@@ -61,7 +68,7 @@
         <div class="app-detail__row"><span class="app-detail__label">Учреждение:</span><span>${endName}</span></div>
         <div class="app-detail__row"><span class="app-detail__label">Дата визита:</span><span>${app.go_date || "—"}</span></div>
         <div class="app-detail__row"><span class="app-detail__label">Комментарий:</span><span>${app.comment || "—"}</span></div>
-        <div class="app-detail__row"><span class="app-detail__label">Статус:</span><span class="badge">${status}</span></div>
+        <div class="app-detail__row"><span class="app-detail__label">Статус:</span>${renderStatusBadge(status)}</div>
       </div>
       <div class="modal__section">
         <h4 class="modal__subtitle">Откликнувшиеся волонтёры</h4>
@@ -69,7 +76,10 @@
       </div>
     `;
 
-    modalFooter.innerHTML = `<button class="btn btn--outline btn--small" type="button" data-close="true">Закрыть</button>`;
+    modalFooter.innerHTML = `
+      ${allowClose ? '<button class="btn btn--outline btn--small" type="button" id="closeAppBtn">Закрыть заявку</button>' : ''}
+      <button class="btn btn--outline btn--small" type="button" data-close="true">Закрыть</button>
+    `;
 
     if (allowAccept) {
       modalBody.querySelectorAll(".accept-vol-btn").forEach((btn) => {
@@ -102,9 +112,38 @@
         });
       });
     }
+
+    if (allowClose) {
+      const closeBtn = document.getElementById("closeAppBtn");
+      if (closeBtn) {
+        closeBtn.addEventListener("click", async () => {
+          closeBtn.disabled = true;
+          closeBtn.textContent = "Закрываем...";
+          try {
+            const res = await fetch("api/application_close.php", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ application_id: app.id })
+            });
+            const text = await res.text();
+            if (!res.ok) {
+              let msg = "Не удалось закрыть заявку";
+              try { const j = JSON.parse(text); msg = j.error || msg; } catch { if (text) msg = text; }
+              throw new Error(msg);
+            }
+            modalBody.querySelector(".app-detail__row:last-child span:nth-child(2)").innerHTML = renderStatusBadge("closed");
+            closeBtn.textContent = "Закрыта";
+          } catch (err) {
+            alert(err.message);
+            closeBtn.disabled = false;
+            closeBtn.textContent = "Закрыть заявку";
+          }
+        });
+      }
+    }
   };
 
-  const open = async (id, { allowAccept = true } = {}) => {
+  const open = async (id, { allowAccept = true, allowClose = false } = {}) => {
     modal.classList.add("is-active");
     document.body.style.overflow = "hidden";
     modalBody.textContent = "Загружаем...";
@@ -118,7 +157,7 @@
         throw new Error(msg);
       }
       const data = JSON.parse(text);
-      renderApplication(data.application, data.volunteers || [], allowAccept);
+      renderApplication(data.application, data.volunteers || [], allowAccept, allowClose);
     } catch (err) {
       modalBody.textContent = err.message;
     }

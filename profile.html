@@ -12,7 +12,7 @@
     <div class="container header__inner">
       <a class="logo" href="client.html" id="homeLogo">HelpWay</a>
       <nav class="nav" aria-label="Основная навигация">
-        <a class="nav__link" href="applications.html" id="applications">Мои заявки</a>
+        <a class="nav__link" href="applications.html" id="applications">Все заявки</a>
         <a class="nav__link" href="profile.html">Профиль</a>
       </nav>
       <div class="header__actions">
@@ -83,7 +83,7 @@
       const applyHomeLink = (role) => {
         const target = role === "volunteer" ? "volunteer.html" : "client.html";
         const target2 = role === "volunteer" ? "volView.html" : "applications.html";
-        const target3 = role === "volunteer" ? "Заявки" : "Мои заявки";
+        const target3 = role === "volunteer" ? "Заявки" : "Все заявки";
         if (homeLogo) homeLogo.href = target;
         if (homeButton) homeButton.href = target;
         if (applications) applications.href = target2;

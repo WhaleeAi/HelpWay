@@ -14,12 +14,13 @@ if ($userId <= 0 && $limit === null) {
 }
 
 try {
-    $sql = "
+$sql = "
         SELECT 
             a.id,
             a.datetime,
             a.type,
             a.comment,
+            a.status,
             a.start_address,
             a.end_id,
             a.end_type,
@@ -46,7 +47,7 @@ try {
     if ($userId > 0) {
         $params[':user_id'] = $userId;
     } else {
-        $where = "";
+        $where = "WHERE a.status <> 'closed'";
     }
     $limitClause = $limit ? "LIMIT {$limit}" : "";
     $sql = str_replace(['/**where_clause**/', '/**limit_clause**/'], [$where, $limitClause], $sql);

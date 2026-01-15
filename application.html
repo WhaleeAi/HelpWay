@@ -5,9 +5,18 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Заявка на помощь | HelpWay</title>
   <link rel="stylesheet" href="css/style.css" />
+  <style>
+    .form__group--with-suggestions { position: relative; }
+    .form__suggestions { position: absolute; left: 0; right: 0; top: 100%; z-index: 20; background: #fff; border: 1px solid #dcdcdc; border-radius: 8px; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08); max-height: 240px; overflow-y: auto; margin-top: 4px; padding: 4px 0; }
+    .form__suggestions[hidden] { display: none; }
+    .form__suggestions-group { padding: 6px 12px; font-weight: 600; color: #555; border-bottom: 1px solid #f1f1f1; background: #f9fafb; }
+    .form__suggestions-item { padding: 10px 12px; cursor: pointer; }
+    .form__suggestions-item:hover { background: #f3f4f6; }
+    .form__suggestions-empty { padding: 10px 12px; color: #777; }
+  </style>
 </head>
 
-<body>
+<body class="page-application">
   <header class="header">
     <div class="container header__inner">
       <a class="logo" href="client.html">HelpWay</a>
@@ -61,11 +70,13 @@
             <input id="go_date" name="go_date" type="date" required />
           </div>
 
-          <div class="form__group">
+          <div class="form__group form__group--with-suggestions">
             <label for="institution">Учреждение</label>
+            <input id="institutionSearch" type="text" class="form__input" placeholder="Поиск учреждения по названию" autocomplete="off" />
             <select id="institution" name="institution" required>
               <option value="">Загрузка списка...</option>
             </select>
+            <div id="institutionSuggestions" class="form__suggestions" hidden></div>
             <div class="form__hint">Список формируется из поликлиник, МФЦ и управ.</div>
           </div>
 
@@ -75,7 +86,7 @@
             <div class="form__hint">Нажмите на метку, чтобы выбрать учреждение.</div>
           </div>
 
-          <button class="btn btn--primary" type="submit">Отправить заявку</button>
+          <button class="btn btn--primary" href="client.html" type="submit">Отправить заявку</button>
           <p class="form__status" id="appStatus" aria-live="polite"></p>
         </form>
       </div>
@@ -88,13 +99,129 @@
       const form = document.getElementById("applicationForm");
       const statusEl = document.getElementById("appStatus");
       const institutionSelect = document.getElementById("institution");
+      const institutionSearch = document.getElementById("institutionSearch");
+      const suggestionsBox = document.getElementById("institutionSuggestions");
       const dateInput = document.getElementById("go_date");
       const mapContainer = document.getElementById("applicationMap");
       let map;
       const userId = localStorage.getItem("user_id");
+      let institutionsData = { mfc: [], polyclinic: [], uprava: [] };
+      let institutionSearchQuery = "";
 
       const today = new Date();
       dateInput.value = today.toISOString().slice(0, 10);
+
+      const renderInstitutionOptions = (query = "", preferredValue = null) => {
+        const q = (query || "").trim().toLowerCase();
+        const previousValue = preferredValue || institutionSelect.value;
+        institutionSelect.innerHTML = "";
+
+        const placeholder = document.createElement("option");
+        placeholder.value = "";
+        placeholder.textContent = "Выберите учреждение...";
+        institutionSelect.appendChild(placeholder);
+
+        const addGroup = (label, items, type) => {
+          if (!items || !items.length) return;
+          const filtered = items.filter((item) => {
+            const name = (item.name || `${label} #${item.id}`).toLowerCase();
+            return !q || name.includes(q);
+          });
+          if (!filtered.length) return;
+          const group = document.createElement("optgroup");
+          group.label = label;
+          filtered.forEach((item) => {
+            const option = document.createElement("option");
+            option.value = `${type}:${item.id}`;
+            option.textContent = item.name || `${label} #${item.id}`;
+            group.appendChild(option);
+          });
+          institutionSelect.appendChild(group);
+        };
+
+        addGroup("МФЦ", institutionsData.mfc, "mfc");
+        addGroup("Поликлиника", institutionsData.polyclinic, "polyclinic");
+        addGroup("Управа", institutionsData.uprava, "uprava");
+
+        if (institutionSelect.children.length === 1) {
+          placeholder.textContent = q ? "Совпадений не найдено" : "Учреждений нет";
+          institutionSelect.value = "";
+          return;
+        }
+
+        if (previousValue && institutionSelect.querySelector(`option[value="${previousValue}"]`)) {
+          institutionSelect.value = previousValue;
+        } else {
+          institutionSelect.value = "";
+        }
+      };
+
+      const renderSuggestions = (query = "", preferredValue = null) => {
+        if (!suggestionsBox) return;
+        const q = (query || "").trim().toLowerCase();
+        const matches = [];
+
+        const pushItems = (items, type, groupLabel) => {
+          if (!items || !items.length) return;
+          items.forEach((item) => {
+            const label = item.name || `${groupLabel} #${item.id}`;
+            if (!q || label.toLowerCase().includes(q)) {
+              matches.push({
+                value: `${type}:${item.id}`,
+                label,
+                group: groupLabel
+              });
+            }
+          });
+        };
+
+        pushItems(institutionsData.mfc, "mfc", "МФЦ");
+        pushItems(institutionsData.polyclinic, "polyclinic", "Поликлиника");
+        pushItems(institutionsData.uprava, "uprava", "Управа");
+
+        suggestionsBox.innerHTML = "";
+
+        if (!q) {
+          suggestionsBox.hidden = true;
+          return;
+        }
+
+        if (!matches.length) {
+          suggestionsBox.innerHTML = `<div class="form__suggestions-empty">Совпадений не найдено</div>`;
+          suggestionsBox.hidden = false;
+          return;
+        }
+
+        const fragment = document.createDocumentFragment();
+        let currentGroup = "";
+        matches.slice(0, 15).forEach((item) => {
+          if (item.group !== currentGroup) {
+            currentGroup = item.group;
+            const groupEl = document.createElement("div");
+            groupEl.className = "form__suggestions-group";
+            groupEl.textContent = currentGroup;
+            fragment.appendChild(groupEl);
+          }
+          const optionEl = document.createElement("div");
+          optionEl.className = "form__suggestions-item";
+          optionEl.textContent = item.label;
+          optionEl.dataset.value = item.value;
+          optionEl.addEventListener("mousedown", (evt) => {
+            evt.preventDefault();
+            const value = optionEl.dataset.value;
+            institutionSearch.value = item.label;
+            institutionSearchQuery = item.label;
+            renderInstitutionOptions(institutionSearchQuery, value);
+            renderSuggestions(institutionSearchQuery, value);
+            institutionSelect.value = value;
+            suggestionsBox.hidden = true;
+          });
+          fragment.appendChild(optionEl);
+        });
+
+        suggestionsBox.appendChild(fragment);
+        suggestionsBox.hidden = false;
+      };
 
       const loadInstitutions = async () => {
         try {
@@ -103,44 +230,37 @@
             throw new Error("Не удалось загрузить учреждения");
           }
           const data = await response.json();
-          institutionSelect.innerHTML = "";
+          institutionsData = {
+            mfc: Array.isArray(data.mfc) ? data.mfc : [],
+            polyclinic: Array.isArray(data.polyclinics) ? data.polyclinics : [],
+            uprava: Array.isArray(data.upravas) ? data.upravas : []
+          };
 
-          const allPoints = [];
-          const addGroup = (label, items, type) => {
+          const mapPoints = [];
+          const collectPoints = (items, type) => {
             if (!items || !items.length) return;
-            const group = document.createElement("optgroup");
-            group.label = label;
             items.forEach((item) => {
-              const option = document.createElement("option");
-              option.value = `${type}:${item.id}`;
-              option.textContent = item.name || `${label} #${item.id}`;
-              group.appendChild(option);
               if (item.lat != null && item.lon != null) {
-                allPoints.push({
+                mapPoints.push({
                   id: item.id,
                   type,
-                  name: item.name || `${label} #${item.id}`,
+                  name: item.name || `${type} #${item.id}`,
                   address: item.address || "",
                   lat: Number(item.lat),
                   lon: Number(item.lon)
                 });
               }
             });
-            institutionSelect.appendChild(group);
           };
 
-          addGroup("МФЦ", data.mfc, "mfc");
-          addGroup("Поликлиники", data.polyclinics, "polyclinic");
-          addGroup("Управы", data.upravas, "uprava");
+          collectPoints(institutionsData.mfc, "mfc");
+          collectPoints(institutionsData.polyclinic, "polyclinic");
+          collectPoints(institutionsData.uprava, "uprava");
 
-          if (!institutionSelect.children.length) {
-            const option = document.createElement("option");
-            option.value = "";
-            option.textContent = "Учреждения не найдены";
-            institutionSelect.appendChild(option);
-          }
+          renderInstitutionOptions(institutionSearchQuery, institutionSelect.value);
+          renderSuggestions(institutionSearchQuery, institutionSelect.value);
 
-          initMap(allPoints);
+          initMap(mapPoints);
         } catch (error) {
           institutionSelect.innerHTML = "";
           const option = document.createElement("option");
@@ -168,7 +288,16 @@
               preset: "islands#blueIcon"
             });
             placemark.events.add("click", () => {
-              institutionSelect.value = `${p.type}:${p.id}`;
+              const value = `${p.type}:${p.id}`;
+              const label = p.name || `${p.type} #${p.id}`;
+              if (institutionSearch) {
+                institutionSearch.value = label;
+                institutionSearchQuery = label;
+              }
+              renderInstitutionOptions(institutionSearchQuery, value);
+              renderSuggestions(institutionSearchQuery, value);
+              institutionSelect.value = value;
+              if (suggestionsBox) suggestionsBox.hidden = true;
             });
             map.geoObjects.add(placemark);
           });
@@ -176,6 +305,36 @@
       };
 
       loadInstitutions();
+
+      if (institutionSearch) {
+        institutionSearch.addEventListener("input", () => {
+          institutionSearchQuery = institutionSearch.value;
+          renderInstitutionOptions(institutionSearchQuery, institutionSelect.value);
+          renderSuggestions(institutionSearchQuery, institutionSelect.value);
+        });
+        institutionSearch.addEventListener("focus", () => {
+          if (institutionSearch.value.trim()) {
+            renderSuggestions(institutionSearch.value, institutionSelect.value);
+          }
+        });
+        document.addEventListener("click", (evt) => {
+          if (!suggestionsBox) return;
+          if (!suggestionsBox.contains(evt.target) && evt.target !== institutionSearch) {
+            suggestionsBox.hidden = true;
+          }
+        });
+      }
+
+      institutionSelect.addEventListener("change", () => {
+        const selected = institutionSelect.selectedOptions[0];
+        if (selected && institutionSearch) {
+          institutionSearch.value = selected.textContent || "";
+          institutionSearchQuery = institutionSearch.value;
+          renderInstitutionOptions(institutionSearchQuery, selected.value);
+          renderSuggestions(institutionSearchQuery, selected.value);
+          if (suggestionsBox) suggestionsBox.hidden = true;
+        }
+      });
 
       const loadUserAddress = async () => {
         if (!userId) return;
