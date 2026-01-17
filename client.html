@@ -100,14 +100,20 @@
         return;
       }
 
-      const renderStatusIcon = (status) => {
+      const renderStatusIcon = (status, hasResponses) => {
         if (status === "closed") {
           return '<span class="status-icon status-icon--closed" title="Закрыта">✔</span>';
+        }
+        if (status === "confirmed") {
+          return '<span class="status-icon status-icon--ok" title="Подтверждена">✔</span>';
+        }
+        if (hasResponses) {
+          return '<span class="status-icon status-icon--responded" title="Есть отклик">&bull;</span>';
         }
         if (!status || status === "open") {
           return '<span class="status-icon status-icon--pending" title="Ожидает откликов">⏳</span>';
         }
-        return '<span class="status-icon status-icon--ok" title="Есть отклик">✔</span>';
+        return '<span class="status-icon status-icon--ok" title="Подтверждена">✔</span>';
       };
 
       const loadApplications = () => {
@@ -138,7 +144,7 @@
                   <td>${item.start_address || ""}</td>
                   <td>${endName}</td>
                   <td>${goDate}</td>
-                  <td>${renderStatusIcon(item.status)}</td>
+                  <td>${renderStatusIcon(item.status, Number(item.has_responses) > 0)}</td>
                 </tr>
               `;
             }).join("");
@@ -152,6 +158,10 @@
           tableBody.innerHTML = `<tr><td colspan="7">${err.message}</td></tr>`;
         });
       };
+
+      window.addEventListener("applications:updated", () => {
+        loadApplications();
+      });
 
       loadApplications();
 

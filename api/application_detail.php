@@ -58,6 +58,32 @@ try {
     $stmtVols->execute([':id' => $id]);
     $volunteers = $stmtVols->fetchAll();
 
+    $volunteerIds = array_values(array_unique(array_filter(array_column($volunteers, 'volunteer_id'))));
+    $closedCounts = [];
+    if ($volunteerIds) {
+        $placeholders = [];
+        $params = [];
+        foreach ($volunteerIds as $index => $volunteerId) {
+            $key = ':v' . $index;
+            $placeholders[] = $key;
+            $params[$key] = $volunteerId;
+        }
+        $sql = "SELECT accepted_volunteer_id AS volunteer_id, COUNT(*) AS closed_count
+                FROM application
+                WHERE status = 'closed' AND accepted_volunteer_id IN (" . implode(',', $placeholders) . ")
+                GROUP BY accepted_volunteer_id";
+        $stmtCounts = $pdo->prepare($sql);
+        $stmtCounts->execute($params);
+        foreach ($stmtCounts->fetchAll() as $row) {
+            $closedCounts[(int)$row['volunteer_id']] = (int)$row['closed_count'];
+        }
+    }
+    foreach ($volunteers as &$volunteer) {
+        $volunteerId = (int)($volunteer['volunteer_id'] ?? 0);
+        $volunteer['closed_count'] = $volunteerId ? ($closedCounts[$volunteerId] ?? 0) : 0;
+    }
+    unset($volunteer);
+
     echo json_encode(['application' => $app, 'volunteers' => $volunteers]);
 } catch (Throwable $e) {
     http_response_code(500);

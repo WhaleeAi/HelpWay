@@ -27,6 +27,39 @@
         <h1 class="register__title">Мои заявки</h1>
         <p class="register__lead">Нажмите на строку, чтобы открыть карточку заявки и выбрать волонтёра.</p>
 
+        <form id="applicationsFilters" class="form">
+          <div class="form__grid">
+            <div class="form__group">
+              <label for="filterDateFrom">Дата заявки (с)</label>
+              <input id="filterDateFrom" type="date" />
+            </div>
+            <div class="form__group">
+              <label for="filterDateTo">Дата заявки (по)</label>
+              <input id="filterDateTo" type="date" />
+            </div>
+            <div class="form__group">
+              <label for="filterVisitFrom">Дата визита (с)</label>
+              <input id="filterVisitFrom" type="date" />
+            </div>
+            <div class="form__group">
+              <label for="filterVisitTo">Дата визита (по)</label>
+              <input id="filterVisitTo" type="date" />
+            </div>
+            <div class="form__group">
+              <label for="filterType">Тип ограничений</label>
+              <input id="filterType" type="text" placeholder="Например: слабовидящие" />
+            </div>
+            <div class="form__group">
+              <label for="filterDistance">Отдаленность, км</label>
+              <input id="filterDistance" type="number" min="0" step="0.1" placeholder="Например: 5" />
+            </div>
+          </div>
+          <div class="filters__actions">
+            <button class="btn btn--outline btn--small" type="submit">Применить</button>
+            <button class="btn btn--outline btn--small" type="button" id="filtersReset">Сбросить</button>
+          </div>
+        </form>
+
         <div class="table-wrapper">
           <table class="table" id="userApplicationsTable">
             <thead>
@@ -54,25 +87,51 @@
     (() => {
       const tableBody = document.querySelector("#userApplicationsTable tbody");
       const userId = localStorage.getItem("user_id");
+      const filtersForm = document.getElementById("applicationsFilters");
+      const filterDateFrom = document.getElementById("filterDateFrom");
+      const filterDateTo = document.getElementById("filterDateTo");
+      const filterVisitFrom = document.getElementById("filterVisitFrom");
+      const filterVisitTo = document.getElementById("filterVisitTo");
+      const filterType = document.getElementById("filterType");
+      const filterDistance = document.getElementById("filterDistance");
+      const filtersReset = document.getElementById("filtersReset");
 
       if (!userId) {
         tableBody.innerHTML = '<tr><td colspan="7">Нужно войти, чтобы смотреть заявки.</td></tr>';
         return;
       }
 
-      const renderStatusIcon = (status) => {
+      const renderStatusIcon = (status, hasResponses) => {
         if (status === "closed") {
           return '<span class="status-icon status-icon--closed" title="Закрыта">✔</span>';
+        }
+        if (status === "confirmed") {
+          return '<span class="status-icon status-icon--ok" title="Подтверждена">✔</span>';
+        }
+        if (hasResponses) {
+          return '<span class="status-icon status-icon--responded" title="Есть отклик">&bull;</span>';
         }
         if (!status || status === "open") {
           return '<span class="status-icon status-icon--pending" title="Ожидает откликов">⏳</span>';
         }
-        return '<span class="status-icon status-icon--ok" title="Есть отклик">✔</span>';
+        return '<span class="status-icon status-icon--ok" title="Подтверждена">✔</span>';
+      };
+
+      const buildParams = () => {
+        const params = new URLSearchParams();
+        params.set("user_id", userId);
+        if (filterDateFrom?.value) params.set("date_from", filterDateFrom.value);
+        if (filterDateTo?.value) params.set("date_to", filterDateTo.value);
+        if (filterVisitFrom?.value) params.set("visit_from", filterVisitFrom.value);
+        if (filterVisitTo?.value) params.set("visit_to", filterVisitTo.value);
+        if (filterType?.value?.trim()) params.set("type", filterType.value.trim());
+        if (filterDistance?.value) params.set("distance_km", filterDistance.value);
+        return params.toString();
       };
 
       const load = async () => {
         try {
-          const res = await fetch(`api/applications.php?user_id=${encodeURIComponent(userId)}`);
+          const res = await fetch(`api/applications.php?${buildParams()}`);
           const text = await res.text();
           if (!res.ok) {
             let msg = "Не удалось загрузить заявки";
@@ -97,7 +156,7 @@
                 <td>${item.start_address || ""}</td>
                 <td>${endName}</td>
                 <td>${item.go_date || ""}</td>
-                <td>${renderStatusIcon(item.status)}</td>
+                <td>${renderStatusIcon(item.status, Number(item.has_responses) > 0)}</td>
               </tr>
             `;
           }).join("");
@@ -110,6 +169,33 @@
           tableBody.innerHTML = `<tr><td colspan="7">${err.message}</td></tr>`;
         }
       };
+
+      const debounce = (fn, wait = 300) => {
+        let t;
+        return (...args) => {
+          clearTimeout(t);
+          t = setTimeout(() => fn(...args), wait);
+        };
+      };
+
+      if (filtersForm) {
+        const scheduleLoad = debounce(load, 300);
+        filtersForm.addEventListener("input", scheduleLoad);
+        filtersForm.addEventListener("submit", (e) => {
+          e.preventDefault();
+          load();
+        });
+        if (filtersReset) {
+          filtersReset.addEventListener("click", () => {
+            filtersForm.reset();
+            load();
+          });
+        }
+      }
+
+      window.addEventListener("applications:updated", () => {
+        load();
+      });
 
       load();
     })();

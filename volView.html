@@ -27,6 +27,39 @@
         <h1 class="register__title">Все заявки</h1>
         <p class="register__lead">Нажмите на строку, чтобы открыть карточку заявки и откликнуться.</p>
 
+        <form id="applicationsFilters" class="form">
+          <div class="form__grid">
+            <div class="form__group">
+              <label for="filterDateFrom">Дата заявки (с)</label>
+              <input id="filterDateFrom" type="date" />
+            </div>
+            <div class="form__group">
+              <label for="filterDateTo">Дата заявки (по)</label>
+              <input id="filterDateTo" type="date" />
+            </div>
+            <div class="form__group">
+              <label for="filterVisitFrom">Дата визита (с)</label>
+              <input id="filterVisitFrom" type="date" />
+            </div>
+            <div class="form__group">
+              <label for="filterVisitTo">Дата визита (по)</label>
+              <input id="filterVisitTo" type="date" />
+            </div>
+            <div class="form__group">
+              <label for="filterType">Тип ограничений</label>
+              <input id="filterType" type="text" placeholder="Например: слабовидящие" />
+            </div>
+            <div class="form__group">
+              <label for="filterDistance">Отдаленность, км</label>
+              <input id="filterDistance" type="number" min="0" step="0.1" placeholder="Например: 5" />
+            </div>
+          </div>
+          <div class="filters__actions">
+            <button class="btn btn--outline btn--small" type="submit">Применить</button>
+            <button class="btn btn--outline btn--small" type="button" id="filtersReset">Сбросить</button>
+          </div>
+        </form>
+
         <div class="table-wrapper">
           <table class="table" id="allApplicationsTable">
             <thead>
@@ -67,6 +100,14 @@
       const modalBody = document.getElementById("appModalBody");
       const modalFooter = document.getElementById("appModalFooter");
       const userId = localStorage.getItem("user_id");
+      const filtersForm = document.getElementById("applicationsFilters");
+      const filterDateFrom = document.getElementById("filterDateFrom");
+      const filterDateTo = document.getElementById("filterDateTo");
+      const filterVisitFrom = document.getElementById("filterVisitFrom");
+      const filterVisitTo = document.getElementById("filterVisitTo");
+      const filterType = document.getElementById("filterType");
+      const filterDistance = document.getElementById("filterDistance");
+      const filtersReset = document.getElementById("filtersReset");
 
       const closeModal = () => {
         modal.classList.remove("is-active");
@@ -154,43 +195,83 @@
         }
       };
 
-      fetch("api/applications.php?limit=200")
-        .then(async (res) => {
-          const text = await res.text();
-          if (!res.ok) {
-            let msg = "Не удалось загрузить заявки";
-            try { const j = JSON.parse(text); msg = j.error || msg; } catch { if (text) msg = text; }
-            throw new Error(msg);
-          }
-          return JSON.parse(text);
-        })
-        .then((items) => {
-          if (!Array.isArray(items) || !items.length) {
-            tableBody.innerHTML = '<tr><td colspan="6">Пока нет доступных заявок.</td></tr>';
-            return;
-          }
-          tableBody.innerHTML = items.map((item) => {
-            const endName = item.end_name || `${item.end_type} #${item.end_id}`;
-            return `
-              <tr class="table__row--clickable" data-id="${item.id}">
-                <td>${item.id}</td>
-                <td>${item.datetime || ""}</td>
-                <td>${item.type || ""}</td>
-                <td>${item.start_address || ""}</td>
-                <td>${endName}</td>
-                <td>${item.go_date || ""}</td>
-              </tr>
-            `;
-          }).join("");
+      const buildParams = () => {
+        const params = new URLSearchParams();
+        params.set("limit", "200");
+        if (userId) params.set("viewer_id", userId);
+        if (filterDateFrom?.value) params.set("date_from", filterDateFrom.value);
+        if (filterDateTo?.value) params.set("date_to", filterDateTo.value);
+        if (filterVisitFrom?.value) params.set("visit_from", filterVisitFrom.value);
+        if (filterVisitTo?.value) params.set("visit_to", filterVisitTo.value);
+        if (filterType?.value?.trim()) params.set("type", filterType.value.trim());
+        if (filterDistance?.value) params.set("distance_km", filterDistance.value);
+        return params.toString();
+      };
 
-          document.querySelectorAll("#allApplicationsTable tbody tr.table__row--clickable").forEach((row) => {
-            row.addEventListener("click", () => openApplication(row.dataset.id));
+      const load = () => {
+        fetch(`api/applications.php?${buildParams()}`)
+          .then(async (res) => {
+            const text = await res.text();
+            if (!res.ok) {
+              let msg = "Не удалось загрузить заявки";
+              try { const j = JSON.parse(text); msg = j.error || msg; } catch { if (text) msg = text; }
+              throw new Error(msg);
+            }
+            return JSON.parse(text);
+          })
+          .then((items) => {
+            if (!Array.isArray(items) || !items.length) {
+              tableBody.innerHTML = '<tr><td colspan="6">Пока нет доступных заявок.</td></tr>';
+              return;
+            }
+            tableBody.innerHTML = items.map((item) => {
+              const endName = item.end_name || `${item.end_type} #${item.end_id}`;
+              return `
+                <tr class="table__row--clickable" data-id="${item.id}">
+                  <td>${item.id}</td>
+                  <td>${item.datetime || ""}</td>
+                  <td>${item.type || ""}</td>
+                  <td>${item.start_address || ""}</td>
+                  <td>${endName}</td>
+                  <td>${item.go_date || ""}</td>
+                </tr>
+              `;
+            }).join("");
+
+            document.querySelectorAll("#allApplicationsTable tbody tr.table__row--clickable").forEach((row) => {
+              row.addEventListener("click", () => openApplication(row.dataset.id));
+            });
+          })
+          .catch((err) => {
+            console.error(err);
+            tableBody.innerHTML = `<tr><td colspan="6">${err.message}</td></tr>`;
           });
-        })
-        .catch((err) => {
-          console.error(err);
-          tableBody.innerHTML = `<tr><td colspan="6">${err.message}</td></tr>`;
+      };
+
+      const debounce = (fn, wait = 300) => {
+        let t;
+        return (...args) => {
+          clearTimeout(t);
+          t = setTimeout(() => fn(...args), wait);
+        };
+      };
+
+      if (filtersForm) {
+        const scheduleLoad = debounce(load, 300);
+        filtersForm.addEventListener("input", scheduleLoad);
+        filtersForm.addEventListener("submit", (e) => {
+          e.preventDefault();
+          load();
         });
+        if (filtersReset) {
+          filtersReset.addEventListener("click", () => {
+            filtersForm.reset();
+            load();
+          });
+        }
+      }
+
+      load();
     })();
   </script>
 </body>
