@@ -1,5 +1,4 @@
 <?php
-// Подключение к БД helpway. Укажите свои креды.
 $host = $cfg['host'] ?? '127.0.0.1';
 $db   = $cfg['db']   ?? 'helpway';
 $user = $cfg['user'] ?? 'root';

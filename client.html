@@ -18,8 +18,8 @@
       </nav>
 
       <div class="header__actions">
-        <a class="avatar" href="profile.html" aria-label="Профиль">
-          <img src="api/image.php?id=3" alt="Профиль" />
+        <a class="avatar" href="profile.html?role=client" aria-label="Профиль">
+          <img src="img/4.png" alt="Профиль" />
         </a>
       </div>
     </div>
@@ -71,7 +71,20 @@
       <div class="container">
         <h2 class="vol-section__title">Ближайшие учреждения</h2>
         <div id="map" class="map"></div>
-        <div id="nearestCards" class="cards-grid cards-grid--5"></div>
+        <div class="table-wrapper">
+          <table class="table" id="nearestTable">
+            <thead>
+              <tr>
+                <th>Название</th>
+                <th>Адрес</th>
+                <th>Расстояние</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td colspan="3">Загрузка...</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </section>
   </main>
@@ -80,9 +93,9 @@
     <div class="container footer__inner">
       <div class="footer__brand">HelpWay</div>
       <div class="footer__contacts">
-        <div>Телефон: <a href="tel:+79990000000">+7 (999) 000-00-00</a></div>
+        <div>Источник открытых данных: <a href="https://data.mos.ru/">data.mos.ru</a></div>
         <div>Email: <a href="mailto:info@helpway.ru">info@helpway.ru</a></div>
-        <div>Адрес: Москва, Рижский проезд, 15к1</div>
+        <div>Адрес офиса: Москва, Рижский проезд, 15к1</div>
       </div>
     </div>
   </footer>
@@ -93,7 +106,10 @@
     (() => {
       const userId = localStorage.getItem("user_id");
       const tableBody = document.querySelector("#applicationsTable tbody");
-      const cardsContainer = document.getElementById("nearestCards");
+      const nearestTableBody = document.querySelector("#nearestTable tbody");
+      let mapInstance;
+      const placemarks = [];
+      let activePlacemark = null;
 
       if (!userId) {
         tableBody.innerHTML = '<tr><td colspan="7">Авторизуйтесь, чтобы просматривать заявки.</td></tr>';
@@ -183,7 +199,7 @@
         .then((data) => {
           if (!data.user || !data.points) return;
           ymaps.ready(() => {
-            const map = new ymaps.Map("map", {
+            mapInstance = new ymaps.Map("map", {
               center: [data.user.lat, data.user.lon],
               zoom: 12
             });
@@ -193,30 +209,50 @@
             }, {
               preset: 'islands#redIcon'
             });
-            map.geoObjects.add(userPlacemark);
+            mapInstance.geoObjects.add(userPlacemark);
 
-            data.points.forEach((p) => {
+            placemarks.length = 0;
+            data.points.forEach((p, idx) => {
               const placemark = new ymaps.Placemark([p.lat, p.lon], {
                 balloonContent: `<strong>${p.name || p.type}</strong><br>${p.address || ''}<br>${p.distance_km.toFixed(1)} км`
               }, {
                 preset: 'islands#blueIcon'
               });
-              map.geoObjects.add(placemark);
+              placemark.__idx = idx;
+              placemarks.push(placemark);
+              mapInstance.geoObjects.add(placemark);
             });
           });
-
-          if (cardsContainer) {
-            cardsContainer.innerHTML = data.points.map((p) => {
-              const metroLine = (p.type === "mfc" && p.metro) ? `<div class="card__meta">Метро: ${p.metro}</div>` : "";
+          if (nearestTableBody) {
+            if (!data.points.length) {
+              nearestTableBody.innerHTML = '<tr><td colspan="3">Нет учреждений рядом.</td></tr>';
+              return;
+            }
+            nearestTableBody.innerHTML = data.points.map((p, idx) => {
               return `
-                <div class="card">
-                  <div class="card__title">${p.name || p.type}</div>
-                  <div class="card__text">${p.address || ''}</div>
-                  ${metroLine}
-                  <div class="card__meta">~${p.distance_km.toFixed(1)} км</div>
-                </div>
+                <tr class="table__row--clickable" data-idx="${idx}">
+                  <td>${p.name || p.type}</td>
+                  <td>${p.address || ''}</td>
+                  <td>${p.distance_km.toFixed(1)} км</td>
+                </tr>
               `;
             }).join("");
+
+            nearestTableBody.querySelectorAll("tr.table__row--clickable").forEach((row) => {
+              row.addEventListener("click", () => {
+                const idx = Number(row.dataset.idx);
+                const point = data.points[idx];
+                const placemark = placemarks[idx];
+                if (!mapInstance || !placemark || !point) return;
+                if (activePlacemark && activePlacemark !== placemark) {
+                  activePlacemark.options.set('preset', 'islands#blueIcon');
+                }
+                placemark.options.set('preset', 'islands#greenIcon');
+                activePlacemark = placemark;
+                mapInstance.setCenter([point.lat, point.lon], 14, { duration: 200 });
+                placemark.balloon.open();
+              });
+            });
           }
         })
         .catch((err) => {

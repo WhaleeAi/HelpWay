@@ -1,4 +1,3 @@
-/* ===== Base ===== */
 * { box-sizing: border-box; }
 html, body { height: 100%; }
 
@@ -19,7 +18,6 @@ a { color: inherit; text-decoration: none; }
   margin: 0 auto;
 }
 
-/* ===== Header ===== */
 .header {
   padding: 28px 0;
   background: #ffffff;
@@ -190,7 +188,7 @@ a { color: inherit; text-decoration: none; }
 .hero__bg{
   position: absolute;
   inset: 0;
-  background-image: var(--hero-bg, url("../api/image.php?id=1"));
+  background-image: var(--hero-bg, url("../img/sss.png"));
   background-repeat: no-repeat;
   background-position: center center;
   background-size: cover;
@@ -211,7 +209,7 @@ a { color: inherit; text-decoration: none; }
 }
 
 .hero__title{
-  margin: 0 0 50px;
+  margin: 0 0 40px;
   color: #000000;
   font-size: 48px;
   line-height: 1.12;
@@ -219,7 +217,7 @@ a { color: inherit; text-decoration: none; }
 }
 
 .hero__subtitle{
-  margin: 0 0 40px;
+  margin: 0 0 30px;
   color: #000000;
   line-height: 1.8;
   max-width: 62ch;
@@ -370,8 +368,8 @@ a { color: inherit; text-decoration: none; }
 }
 
 .step-card__img{
-  width: 110px;
-  height: 110px;
+  width: 340px;
+  height: 340px;
   margin: 0 auto 12px;
   border-radius: 12px;
   object-fit: cover;
@@ -393,11 +391,11 @@ a { color: inherit; text-decoration: none; }
 
 /* ===== Client page ===== */
 .hero--client{
-  --hero-bg: url("../api/image.php?id=2");
+  --hero-bg: url("../img/5.png");
 }
 
 .hero--volunteer{
-  --hero-bg: url("../api/image.php?id=2");
+  --hero-bg: url("../img/6.png");
 }
 .hero--client .hero__content {
   text-align: center;
@@ -609,6 +607,7 @@ a { color: inherit; text-decoration: none; }
   border-radius: 14px;
   overflow: hidden;
   box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+  margin-bottom: 30px;
 }
 
 /* ===== About ===== */
@@ -770,6 +769,32 @@ a { color: inherit; text-decoration: none; }
   gap: 10px;
   flex-wrap: wrap;
   margin-bottom: 18px;
+}
+
+.filters-form__row{
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin-bottom: 30px;
+}
+
+.filters-form__grid{
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  flex: 1;
+}
+
+.filters-form .form__group{
+  max-width: none;
+}
+
+.filters-form .filters__actions{
+  margin: 0;
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
 }
 
 .back-link{

@@ -14,6 +14,7 @@
       <nav class="nav" aria-label="Основная навигация">
         <a class="nav__link" href="volView.html">Заявки</a>
         <a class="nav__link" href="profile.html">Профиль</a>
+        <a class="nav__link" href="archive.html">Архив</a>
       </nav>
       <div class="header__actions">
         <a class="btn btn--primary" href="volunteer.html">Главная</a>
@@ -27,36 +28,30 @@
         <h1 class="register__title">Все заявки</h1>
         <p class="register__lead">Нажмите на строку, чтобы открыть карточку заявки и откликнуться.</p>
 
-        <form id="applicationsFilters" class="form">
-          <div class="form__grid">
-            <div class="form__group">
-              <label for="filterDateFrom">Дата заявки (с)</label>
-              <input id="filterDateFrom" type="date" />
-            </div>
-            <div class="form__group">
-              <label for="filterDateTo">Дата заявки (по)</label>
-              <input id="filterDateTo" type="date" />
-            </div>
-            <div class="form__group">
-              <label for="filterVisitFrom">Дата визита (с)</label>
-              <input id="filterVisitFrom" type="date" />
-            </div>
-            <div class="form__group">
-              <label for="filterVisitTo">Дата визита (по)</label>
-              <input id="filterVisitTo" type="date" />
-            </div>
+        <form id="applicationsFilters" class="form filters-form">
+          <div class="filters-form__row">
+            <div class="form__grid filters-form__grid">
             <div class="form__group">
               <label for="filterType">Тип ограничений</label>
-              <input id="filterType" type="text" placeholder="Например: слабовидящие" />
+              <select id="filterType">
+                <option value="">Все типы</option>
+                <option value="слабовидящие">Слабовидящие</option>
+                <option value="опорно-двигательные">Опорно-двигательные</option>
+                <option value="когнитивные">Когнитивные</option>
+                <option value="слуховые">Слуховые</option>
+                <option value="речевые">Речевые</option>
+                <option value="множественные">Множественные</option>
+              </select>
             </div>
             <div class="form__group">
               <label for="filterDistance">Отдаленность, км</label>
               <input id="filterDistance" type="number" min="0" step="0.1" placeholder="Например: 5" />
             </div>
           </div>
-          <div class="filters__actions">
-            <button class="btn btn--outline btn--small" type="submit">Применить</button>
-            <button class="btn btn--outline btn--small" type="button" id="filtersReset">Сбросить</button>
+            <div class="filters__actions">
+              <button class="btn btn--outline btn--small" type="submit">Применить</button>
+              <button class="btn btn--outline btn--small" type="button" id="filtersReset">Сбросить</button>
+            </div>
           </div>
         </form>
 
@@ -65,11 +60,17 @@
             <thead>
               <tr>
                 <th>ID</th>
-                <th>Дата создания</th>
+                <th class="sortable" data-sort="datetime">
+                  Дата создания
+                  <span class="sort-indicator"></span>
+                </th>
                 <th>Тип ограничения</th>
                 <th>Адрес клиента</th>
                 <th>Учреждение</th>
-                <th>Дата визита</th>
+                <th class="sortable" data-sort="go_date">
+                  Дата визита
+                  <span class="sort-indicator"></span>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -101,13 +102,13 @@
       const modalFooter = document.getElementById("appModalFooter");
       const userId = localStorage.getItem("user_id");
       const filtersForm = document.getElementById("applicationsFilters");
-      const filterDateFrom = document.getElementById("filterDateFrom");
-      const filterDateTo = document.getElementById("filterDateTo");
-      const filterVisitFrom = document.getElementById("filterVisitFrom");
-      const filterVisitTo = document.getElementById("filterVisitTo");
       const filterType = document.getElementById("filterType");
       const filterDistance = document.getElementById("filterDistance");
       const filtersReset = document.getElementById("filtersReset");
+      
+      // Переменные для сортировки
+      let currentSortField = 'datetime';
+      let currentSortOrder = 'DESC';
 
       const closeModal = () => {
         modal.classList.remove("is-active");
@@ -198,14 +199,27 @@
       const buildParams = () => {
         const params = new URLSearchParams();
         params.set("limit", "200");
+        params.set("sort_by", currentSortField);
+        params.set("sort_order", currentSortOrder);
+        
         if (userId) params.set("viewer_id", userId);
-        if (filterDateFrom?.value) params.set("date_from", filterDateFrom.value);
-        if (filterDateTo?.value) params.set("date_to", filterDateTo.value);
-        if (filterVisitFrom?.value) params.set("visit_from", filterVisitFrom.value);
-        if (filterVisitTo?.value) params.set("visit_to", filterVisitTo.value);
         if (filterType?.value?.trim()) params.set("type", filterType.value.trim());
         if (filterDistance?.value) params.set("distance_km", filterDistance.value);
         return params.toString();
+      };
+
+      // Функция для обновления индикаторов сортировки
+      const updateSortIndicators = () => {
+        document.querySelectorAll('.sortable').forEach(th => {
+          const indicator = th.querySelector('.sort-indicator');
+          if (th.dataset.sort === currentSortField) {
+            indicator.textContent = currentSortOrder === 'DESC' ? '▼' : '▲';
+            indicator.style.opacity = '1';
+          } else {
+            indicator.textContent = '↕';
+            indicator.style.opacity = '0.3';
+          }
+        });
       };
 
       const load = () => {
@@ -248,6 +262,26 @@
           });
       };
 
+      // Обработчики для сортировки
+      document.querySelectorAll('#allApplicationsTable .sortable').forEach(th => {
+        th.style.cursor = 'pointer';
+        th.addEventListener('click', () => {
+          const sortField = th.dataset.sort;
+          
+          if (currentSortField === sortField) {
+            // Переключение порядка сортировки для того же поля
+            currentSortOrder = currentSortOrder === 'DESC' ? 'ASC' : 'DESC';
+          } else {
+            // Установка нового поля сортировки (по умолчанию DESC)
+            currentSortField = sortField;
+            currentSortOrder = 'DESC';
+          }
+          
+          updateSortIndicators();
+          load();
+        });
+      });
+
       const debounce = (fn, wait = 300) => {
         let t;
         return (...args) => {
@@ -271,6 +305,8 @@
         }
       }
 
+      // Инициализация индикаторов сортировки
+      updateSortIndicators();
       load();
     })();
   </script>

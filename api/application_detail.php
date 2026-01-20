@@ -11,29 +11,17 @@ if ($id <= 0) {
 
 try {
     $stmt = $pdo->prepare("
-        SELECT 
-            a.id,
-            a.user_id,
-            a.datetime,
-            a.type,
-            a.comment,
-            a.start_address,
-            a.end_id,
-            a.end_type,
-            a.go_date,
-            a.status,
+        SELECT a.id, a.user_id, a.datetime, a.type,
+            a.comment, a.start_address, a.end_id,
+            a.end_type, a.go_date, a.status,
             a.accepted_volunteer_id,
-            CASE 
-                WHEN a.end_type = 'mfc' THEN (
+            CASE WHEN a.end_type = 'mfc' THEN (
                     SELECT COALESCE(short_name, common_name, full_name) FROM mfc_centers m WHERE m.global_id = a.end_id LIMIT 1
-                )
-                WHEN a.end_type = 'polyclinic' THEN (
+                ) WHEN a.end_type = 'polyclinic' THEN (
                     SELECT COALESCE(short_name, full_name, org_full_name) FROM polyclinics p WHERE p.global_id = a.end_id LIMIT 1
-                )
-                WHEN a.end_type = 'uprava' THEN (
+                ) WHEN a.end_type = 'uprava' THEN (
                     SELECT name FROM upravas u WHERE u.global_id = a.end_id LIMIT 1
-                )
-                ELSE NULL
+                ) ELSE NULL
             END AS end_name
         FROM application a
         WHERE a.id = :id

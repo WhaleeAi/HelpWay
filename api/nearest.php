@@ -10,7 +10,7 @@ if ($userId <= 0) {
 }
 
 function haversine($lat1, $lon1, $lat2, $lon2) {
-    $R = 6371; // km
+    $R = 6371;
     $dLat = deg2rad($lat2 - $lat1);
     $dLon = deg2rad($lon2 - $lon1);
     $a = sin($dLat/2) * sin($dLat/2) +

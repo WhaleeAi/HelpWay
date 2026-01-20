@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Архив заявок | HelpWay</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+
+<body>
+  <header class="header">
+    <div class="container header__inner">
+      <a class="logo" href="client.html" id="homeLogo">HelpWay</a>
+      <nav class="nav" aria-label="Навигация">
+        <a class="nav__link" href="applications.html" id ="applications">Заявки</a>
+        <a class="nav__link" href="profile.html">Профиль</a>
+        <a class="nav__link" href="archive.html">Архив</a>
+      </nav>
+      <div class="header__actions">
+        <a class="btn btn--primary" href="client.html" id="homeButton">Главная</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="register">
+    <div class="container">
+      <div class="applications__card">
+        <h1 class="register__title">Архив заявок</h1>
+        <p class="register__lead" id="archiveLead">Завершённые заявки.</p>
+        <p class="register__lead archive-counter" id="archiveCounter" hidden></p>
+
+        <div class="table-wrapper">
+          <table class="table" id="archiveTable">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Дата создания</th>
+                <th>Тип ограничения</th>
+                <th>Адрес клиента</th>
+                <th>Учреждение</th>
+                <th>Дата визита</th>
+                <th>Статус</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td colspan="7">Загрузка...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="js/app-modal.js"></script>
+  <script>
+    (() => {
+      const userId = localStorage.getItem("user_id");
+      const role = localStorage.getItem("role");
+      const tableBody = document.querySelector("#archiveTable tbody");
+      const counterEl = document.getElementById("archiveCounter");
+      const leadEl = document.getElementById("archiveLead");
+      const homeLogo = document.getElementById("homeLogo");
+      const homeButton = document.getElementById("homeButton");
+      const applications = document.getElementById("applications");
+      if (!userId || role !== "volunteer") {
+        window.location.href = "login.html";
+        return;
+      }
+
+      if (homeLogo) homeLogo.href = "volunteer.html";
+      if (homeButton) homeButton.href = "volunteer.html";
+      if (applications) {
+        applications.href = "volView.html";
+        applications.textContent = "Заявки";
+      }
+      if (counterEl) {
+        counterEl.hidden = false;
+      }
+
+      const renderStatusIcon = () => '<span class="status-icon status-icon--closed" title="Закрыта">✔</span>';
+
+      const loadArchive = async () => {
+        try {
+          const params = new URLSearchParams({ user_id: userId });
+          const res = await fetch(`api/applications_archive.php?${params.toString()}`);
+          const text = await res.text();
+          if (!res.ok) {
+            let msg = "Не удалось загрузить архив";
+            try { const j = JSON.parse(text); msg = j.error || msg; } catch { if (text) msg = text; }
+            throw new Error(msg);
+          }
+          const items = JSON.parse(text);
+          if (counterEl) {
+            counterEl.textContent = `Выполнено ${Array.isArray(items) ? items.length : 0} заказов`;
+          }
+          if (!Array.isArray(items) || !items.length) {
+            tableBody.innerHTML = '<tr><td colspan="7">Пока нет завершённых заявок.</td></tr>';
+            return;
+          }
+          tableBody.innerHTML = items.map((item) => {
+            const endName = item.end_name || `${item.end_type} #${item.end_id}`;
+            const goDate = item.go_date || "";
+            const created = item.datetime || "";
+            const rowStatus = item.status || "closed";
+            return `
+              <tr class="table__row--clickable" data-id="${item.id}">
+                <td>${item.id}</td>
+                <td>${created}</td>
+                <td>${item.type || ""}</td>
+                <td>${item.start_address || ""}</td>
+                <td>${endName}</td>
+                <td>${goDate}</td>
+                <td>${renderStatusIcon(rowStatus)}</td>
+              </tr>
+            `;
+          }).join("");
+
+          document.querySelectorAll("#archiveTable tbody tr.table__row--clickable").forEach((row) => {
+            row.addEventListener("click", () => AppModal.open(row.dataset.id, { allowAccept: false, allowClose: false }));
+          });
+        } catch (err) {
+          console.error(err);
+          tableBody.innerHTML = `<tr><td colspan="7">${err.message}</td></tr>`;
+        }
+      };
+
+      loadArchive();
+    })();
+  </script>
+</body>
+</html>
+

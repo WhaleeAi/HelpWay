@@ -14,6 +14,7 @@
       <nav class="nav" aria-label="Основная навигация">
         <a class="nav__link" href="applications.html" id="applications">Все заявки</a>
         <a class="nav__link" href="profile.html">Профиль</a>
+        <a class="nav__link" href="archive.html" id="archiveLink" hidden>Архив</a>
       </nav>
       <div class="header__actions">
         <a class="btn btn--primary" href="client.html" id="homeButton">Главная</a>
@@ -78,6 +79,7 @@
       const homeLogo = document.getElementById("homeLogo");
       const homeButton = document.getElementById("homeButton");
       const applications = document.getElementById("applications");
+      const archiveLink = document.getElementById("archiveLink");
       const logoutBtn = document.getElementById("logoutBtn");
 
       const applyHomeLink = (role) => {
@@ -88,6 +90,7 @@
         if (homeButton) homeButton.href = target;
         if (applications) applications.href = target2;
         if (applications) applications.textContent = target3;
+        if (archiveLink) archiveLink.hidden = role !== "volunteer";
       };
 
       if (!userId) {
